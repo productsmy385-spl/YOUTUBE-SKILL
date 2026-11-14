@@ -21,11 +21,32 @@ export class BackgroundWorkerService {
     this.isRunning = true;
     console.log("[Worker] Sir's AI YouTube Studio Background Worker started.");
     console.log("[Worker] Listening for render:video, qc:evaluate, upload:youtube, upload:instagram...");
+
+    // Start background event poll loop
+    this.pollLoop().catch((err) => {
+      console.error("[Worker] Fatal error in poll loop:", err);
+    });
+
+    // Graceful shutdown handling
+    process.on("SIGTERM", () => this.stop("SIGTERM"));
+    process.on("SIGINT", () => this.stop("SIGINT"));
   }
 
-  public stop() {
+  public stop(signal?: string) {
     this.isRunning = false;
-    console.log("[Worker] Background Worker shut down cleanly.");
+    console.log(`[Worker] Received ${signal || "shutdown"}. Background Worker shut down cleanly.`);
+    process.exit(0);
+  }
+
+  private async pollLoop() {
+    while (this.isRunning) {
+      try {
+        // Poll queue periodically
+        await new Promise((resolve) => setTimeout(resolve, this.pollIntervalMs));
+      } catch (err) {
+        console.error("[Worker] Error in poll loop:", err);
+      }
+    }
   }
 
   /**
@@ -71,7 +92,5 @@ export class BackgroundWorkerService {
 
 export const backgroundWorker = new BackgroundWorkerService();
 
-// Auto-start if run directly in Node
-if (require.main === module) {
-  backgroundWorker.start();
-}
+// Auto-start if run directly
+backgroundWorker.start();

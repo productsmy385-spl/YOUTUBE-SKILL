@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tv,
   UploadCloud,
@@ -26,6 +27,14 @@ import {
   Tag,
   ShieldAlert,
   Sliders,
+  TrendingUp,
+  Bot,
+  Send,
+  CornerDownRight,
+  Smile,
+  Search,
+  Check,
+  Copy,
 } from "lucide-react";
 
 interface PublishedVideo {
@@ -40,6 +49,35 @@ interface PublishedVideo {
   ctr: string;
   status: "Public" | "Scheduled" | "Unlisted";
   thumbnailUrl: string;
+}
+
+interface TitleVariant {
+  style: "Curiosity Hook" | "Emotional Appeal" | "Mass Drama" | "Search SEO";
+  teluguTitle: string;
+  englishTitle: string;
+  hookLine: string;
+  projectedCtr: string;
+  clickScore: number;
+  explanation: string;
+}
+
+interface KeywordItem {
+  tag: string;
+  searchVolume: string;
+  competition: "Low" | "Medium" | "High";
+  isTrending: boolean;
+}
+
+interface CommentItem {
+  id: string;
+  author: string;
+  avatar: string;
+  text: string;
+  sentiment: "positive" | "question" | "critical" | "neutral";
+  timestamp: string;
+  likes: number;
+  aiSuggestedReply?: string;
+  replySent?: boolean;
 }
 
 const mockPublishedVideos: PublishedVideo[] = [
@@ -104,13 +142,195 @@ export function YouTubeStudioView() {
   const [uploadSuccess, setUploadSuccess] = React.useState(false);
   const [quotaRemaining, setQuotaRemaining] = React.useState(6800);
 
+  // A/B Variant State
+  const [variantTopic, setVariantTopic] = React.useState("సంక్రాంతి పల్లెటూరి జ్ఞాపకాలు");
+  const [isLoadingVariants, setIsLoadingVariants] = React.useState(false);
+  const [variants, setVariants] = React.useState<TitleVariant[]>([
+    {
+      style: "Curiosity Hook",
+      teluguTitle: "గోదావరి పల్లెల్లో సంక్రాంతి నాడు అసలు ఏం జరుగుతుందో తెలుసా? 🌾",
+      englishTitle: "What Really Happens During Sankranti in Godavari Villages?",
+      hookLine: "ఈ ఒక్క రోజు కోసమే ఊరంతా ఏడాది పొడవునా ఎదురుచూస్తుంది...",
+      projectedCtr: "12.8%",
+      clickScore: 94,
+      explanation: "Creates high intrigue by withholding the central emotional secret in the first 3 seconds.",
+    },
+    {
+      style: "Emotional Appeal",
+      teluguTitle: "అమ్మ చేతి పిండివంటలు... కన్నీళ్లు తెప్పించే సంక్రాంతి జ్ఞాపకం 🥺",
+      englishTitle: "Mother's Festive Cooking... A Heartwarming Village Memory",
+      hookLine: "ఎంత సంపాదించినా, పల్లెటూరి పిండివంటల వాసన ముందు ఏదీ సరిపోదు...",
+      projectedCtr: "11.2%",
+      clickScore: 89,
+      explanation: "Targets Telugu family sentiment and deep nostalgic yearning for mother's cooking.",
+    },
+    {
+      style: "Mass Drama",
+      teluguTitle: "సంక్రాంతి పందెం బరిలో దిగిన ఊరి పెద్ద! రొమాలు నిక్కబొడిచే సీన్! 💥",
+      englishTitle: "Village Elder Enters the Festive Arena! Intense Climax Scene",
+      hookLine: "ఈ పందెంలో గెలిచేది కోడి కాదు... మన ఊరి పౌరుషం!",
+      projectedCtr: "13.6%",
+      clickScore: 97,
+      explanation: "High energy, competitive mass appeal that drives instant Shorts engagement.",
+    },
+    {
+      style: "Search SEO",
+      teluguTitle: "సంక్రాంతి పండుగ విశిష్టత & గోదావరి సాంప్రదాయాలు | Telugu Stories",
+      englishTitle: "Sankranti Festival Traditions & Godavari Culture Telugu Story",
+      hookLine: "మన తెలుగు సంస్కృతి గొప్పదనం చాటే నిజమైన పండుగ కథ.",
+      projectedCtr: "8.9%",
+      clickScore: 82,
+      explanation: "Engineered for high organic search query volume on YouTube Search & Google Video.",
+    },
+  ]);
+
+  // Keyword Explorer State
+  const [searchKeyword, setSearchKeyword] = React.useState("సంక్రాంతి");
+  const [isSearchingKeywords, setIsSearchingKeywords] = React.useState(false);
+  const [discoveredKeywords, setDiscoveredKeywords] = React.useState<KeywordItem[]>([
+    { tag: "Sankranti Telugu Stories", searchVolume: "120K/mo", competition: "Low", isTrending: true },
+    { tag: "గోదావరి సంక్రాంతి సంబరాలు", searchVolume: "85K/mo", competition: "Low", isTrending: true },
+    { tag: "Telugu AI Animated Shorts", searchVolume: "65K/mo", competition: "Medium", isTrending: true },
+    { tag: "పల్లెటూరి పండుగ ముచ్చట్లు", searchVolume: "42K/mo", competition: "Low", isTrending: false },
+    { tag: "Tollywood Emotional Scenes", searchVolume: "210K/mo", competition: "High", isTrending: false },
+    { tag: "గంగిరెద్దుల పాటలు తెలుగు", searchVolume: "38K/mo", competition: "Low", isTrending: true },
+  ]);
+
+  // Community Comments State
+  const [comments, setComments] = React.useState<CommentItem[]>([
+    {
+      id: "c_01",
+      author: "శ్రీనివాసరావు (Srinivasa Rao)",
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80",
+      text: "అద్భుతమైన విజువల్స్ బ్రదర్! గోదావరి మాండలికం వింటుంటే చిన్ననాటి జ్ఞాపకాలు గుర్తొచ్చాయి. నెక్స్ట్ పార్ట్ ఎప్పుడు వస్తుంది?",
+      sentiment: "positive",
+      timestamp: "12 mins ago",
+      likes: 24,
+      aiSuggestedReply: "చాలా సంతోషం అన్నా! మీ అమూల్యమైన ప్రేమకు ధన్యవాదాలు. రెండో భాగం వచ్చే బుధవారం సాయంత్రం 6 గంటలకి రిలీజ్ చేస్తున్నాం!",
+    },
+    {
+      id: "c_02",
+      author: "Sai Teja",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80",
+      text: "Background music emotion ki perfect ga suit aindi. ఏ AI టూల్స్ తో క్రియేట్ చేశారు?",
+      sentiment: "question",
+      timestamp: "35 mins ago",
+      likes: 8,
+      aiSuggestedReply: "హలో సాయి తేజ! ఇది మా సిర్స్ AI ఏజెంటిక్ స్టూడియో ద్వారా Gemini Veo, న్యూరల్ తెలుగు వాయిస్ మరియు FFmpeg తో నిర్మించాం!",
+    },
+    {
+      id: "c_03",
+      author: "Venkatesh K.",
+      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80",
+      text: "రైతు పాత్ర ముఖంలో కన్నీళ్లు ఇంకొంచెం నేచురల్ గా ఉండాల్సింది. బట్ ఓవరాల్ స్టోరీ ఎక్సలెంట్!",
+      sentiment: "critical",
+      timestamp: "1 hour ago",
+      likes: 15,
+      aiSuggestedReply: "మీ నిజాయితీ గల అభిప్రాయానికి ధన్యవాదాలు వెంకటేష్ గారు. తదుపరి ఎపిసోడ్ లో మా క్యారెక్టర్ & ఫేసియల్ రిగ్గింగ్ ని మరింత మెరుగుపరుస్తాం!",
+    },
+  ]);
+  const [activeReplyId, setActiveReplyId] = React.useState<string | null>(null);
+  const [replyDraft, setReplyDraft] = React.useState<string>("");
+
+  const handleGenerateVariants = async () => {
+    setIsLoadingVariants(true);
+    try {
+      const res = await fetch("/api/youtube", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "variants",
+          topic: variantTopic,
+          format: selectedFormat,
+        }),
+      });
+      const data = await res.json();
+      if (data.variants && data.variants.length > 0) {
+        setVariants(data.variants);
+      }
+    } catch (err) {
+      console.warn("Using deterministic fallback variants", err);
+    } finally {
+      setIsLoadingVariants(false);
+    }
+  };
+
+  const handleSearchKeywords = async () => {
+    setIsSearchingKeywords(true);
+    try {
+      const res = await fetch("/api/youtube", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "keywords",
+          topic: searchKeyword,
+        }),
+      });
+      const data = await res.json();
+      if (data.keywords && data.keywords.length > 0) {
+        setDiscoveredKeywords(data.keywords);
+      }
+    } catch (err) {
+      console.warn("Using keyword fallback", err);
+    } finally {
+      setIsSearchingKeywords(false);
+    }
+  };
+
+  const applyVariantToTitle = (variant: TitleVariant) => {
+    setVideoTitle(`${variant.teluguTitle} | ${variant.englishTitle}`);
+  };
+
+  const addTagToTags = (tag: string) => {
+    if (!tags.includes(tag)) {
+      setTags((prev) => (prev ? `${prev}, ${tag}` : tag));
+    }
+  };
+
+  const addAllTags = () => {
+    const newTags = discoveredKeywords.map((k) => k.tag).filter((t) => !tags.includes(t));
+    if (newTags.length > 0) {
+      setTags((prev) => (prev ? `${prev}, ${newTags.join(", ")}` : newTags.join(", ")));
+    }
+  };
+
+  const handleOpenReply = (comment: CommentItem) => {
+    setActiveReplyId(comment.id);
+    setReplyDraft(comment.aiSuggestedReply || "");
+  };
+
+  const handleSendReply = (commentId: string) => {
+    setComments((prev) =>
+      prev.map((c) => (c.id === commentId ? { ...c, replySent: true, aiSuggestedReply: replyDraft } : c))
+    );
+    setActiveReplyId(null);
+    setReplyDraft("");
+  };
+
   const handleUpload = async () => {
     setIsUploading(true);
     setUploadProgress(10);
     setUploadSuccess(false);
 
-    for (let p = 20; p <= 100; p += 20) {
-      await new Promise((r) => setTimeout(r, 400));
+    try {
+      await fetch("/api/youtube", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "upload",
+          title: videoTitle,
+          description: videoDescription,
+          tags: tags.split(",").map((t) => t.trim()),
+          privacy,
+          format: selectedFormat,
+        }),
+      });
+    } catch {
+      // Mock progress simulation continues
+    }
+
+    for (let p = 25; p <= 100; p += 25) {
+      await new Promise((r) => setTimeout(r, 350));
       setUploadProgress(p);
     }
 
@@ -123,7 +343,7 @@ export function YouTubeStudioView() {
     <div className="space-y-6 pb-12">
       <PageHeader
         title="YouTube Operations & Publishing"
-        description="Direct channel management, multi-format upload automation, metadata optimization, and API quota monitoring."
+        description="Direct channel management, multi-format upload automation, A/B title experimentation, Telugu SEO tags, and community auto-reply."
       >
         <div className="flex items-center gap-3">
           <Badge variant="outline" className="border-border text-foreground font-medium px-3 py-1">
@@ -217,207 +437,547 @@ export function YouTubeStudioView() {
         </Card>
       </div>
 
-      {/* Main Publishing Workflow */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Form: Video Details */}
-        <Card className="lg:col-span-8">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <UploadCloud className="w-5 h-5 text-primary" />
-                  Publish Video to YouTube
-                </CardTitle>
-                <CardDescription>Configure metadata, SEO tags, privacy status, and release schedule.</CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant={selectedFormat === "Shorts" ? "primary" : "outline"}
-                  onClick={() => setSelectedFormat("Shorts")}
-                >
-                  Shorts (9:16)
-                </Button>
-                <Button
-                  size="sm"
-                  variant={selectedFormat === "Long-form" ? "primary" : "outline"}
-                  onClick={() => setSelectedFormat("Long-form")}
-                >
-                  Long-form (16:9)
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
+      {/* Operations Workspace Tabs: Publish | A/B Experiments | Telugu SEO | Community Auto-Reply */}
+      <Tabs defaultValue="publish" className="w-full">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full h-auto p-1 bg-muted/80 gap-1">
+          <TabsTrigger value="publish" className="gap-2 py-2.5">
+            <UploadCloud className="w-4 h-4" />
+            <span>Publish & Schedule</span>
+          </TabsTrigger>
+          <TabsTrigger value="ab-variants" className="gap-2 py-2.5">
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            <span>A/B Title & Hook Engine</span>
+          </TabsTrigger>
+          <TabsTrigger value="seo-tags" className="gap-2 py-2.5">
+            <TrendingUp className="w-4 h-4 text-emerald-500" />
+            <span>Telugu SEO & Trends</span>
+          </TabsTrigger>
+          <TabsTrigger value="community" className="gap-2 py-2.5">
+            <MessageSquare className="w-4 h-4 text-blue-500" />
+            <span>Community & Telugu Replies</span>
+          </TabsTrigger>
+        </TabsList>
 
-          <CardContent className="space-y-4">
-            <div>
-              <label className="text-xs font-semibold text-foreground block mb-1">
-                Video Title (Telugu & English)
-              </label>
-              <Input
-                value={videoTitle}
-                onChange={(e) => setVideoTitle(e.target.value)}
-                placeholder="Enter compelling title..."
-              />
-              <span className="text-2xs text-muted-foreground mt-1 block">
-                {videoTitle.length}/100 characters • Recommended to include #Shorts for vertical videos.
-              </span>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-foreground">
-                  Description & Automated Chapters
-                </label>
-                <Button variant="ghost" size="sm" className="h-6 text-2xs text-primary gap-1">
-                  <Sparkles className="w-3 h-3" />
-                  AI SEO Optimize
-                </Button>
-              </div>
-              <Textarea
-                rows={6}
-                value={videoDescription}
-                onChange={(e) => setVideoDescription(e.target.value)}
-                placeholder="Write full video description..."
-                className="font-mono text-xs leading-relaxed"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-foreground block mb-1">Tags / Keywords</label>
-                <Input
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
-                  placeholder="Comma separated tags..."
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-foreground block mb-1">Privacy & Release Mode</label>
-                <Select
-                  value={privacy}
-                  onChange={(e) => setPrivacy(e.target.value)}
-                  options={[
-                    { label: "Public (Instant Release)", value: "public" },
-                    { label: "Scheduled (Pick Time)", value: "scheduled" },
-                    { label: "Unlisted (Review Link)", value: "unlisted" },
-                    { label: "Private", value: "private" },
-                  ]}
-                />
-              </div>
-            </div>
-
-            {privacy === "scheduled" && (
-              <div className="p-3 rounded-lg bg-muted/40 border border-border space-y-2">
-                <div className="flex items-center gap-2 text-xs font-medium text-foreground">
-                  <Calendar className="w-4 h-4 text-primary" />
-                  Select Schedule Date & Time (Asia/Kolkata IST)
-                </div>
-                <Input
-                  type="datetime-local"
-                  value={scheduledDate}
-                  onChange={(e) => setScheduledDate(e.target.value)}
-                  className="w-full sm:w-72"
-                />
-                <span className="text-2xs text-muted-foreground">
-                  Video will be uploaded immediately as private and flipped to public automatically by YouTube servers.
-                </span>
-              </div>
-            )}
-
-            {isUploading && (
-              <div className="p-4 rounded-xl border border-primary/30 bg-primary/5 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-primary flex items-center gap-2">
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    Uploading Video Chunk to YouTube (Resumable Protocol)...
-                  </span>
-                  <span className="font-bold text-primary">{uploadProgress}%</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full bg-primary transition-all duration-300"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {uploadSuccess && (
-              <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+        {/* Tab 1: Publish & Schedule */}
+        <TabsContent value="publish" className="mt-6 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left Form: Video Details */}
+            <Card className="lg:col-span-8">
+              <CardHeader>
+                <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-semibold text-emerald-400">Video Successfully Published to YouTube!</p>
-                    <p className="text-2xs text-muted-foreground">
-                      Video ID: yt_live_948a • URL: https://youtube.com/watch?v=yt_live_948a
-                    </p>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <UploadCloud className="w-5 h-5 text-primary" />
+                      Publish Video to YouTube
+                    </CardTitle>
+                    <CardDescription>Configure metadata, SEO tags, privacy status, and release schedule.</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant={selectedFormat === "Shorts" ? "primary" : "outline"}
+                      onClick={() => setSelectedFormat("Shorts")}
+                    >
+                      Shorts (9:16)
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={selectedFormat === "Long-form" ? "primary" : "outline"}
+                      onClick={() => setSelectedFormat("Long-form")}
+                    >
+                      Long-form (16:9)
+                    </Button>
                   </div>
                 </div>
-                <Button size="sm" variant="outline" className="gap-1.5 h-8">
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  View on YouTube
-                </Button>
-              </div>
-            )}
+              </CardHeader>
 
-            <div className="pt-2 flex justify-end gap-3">
-              <Button variant="outline">Save as Draft</Button>
-              <Button
-                variant="primary"
-                onClick={handleUpload}
-                disabled={isUploading}
-                className="gap-2 px-6"
-              >
-                <Tv className="w-4 h-4" />
-                {privacy === "scheduled" ? "Schedule Release" : "Publish to YouTube"}
-              </Button>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-foreground block mb-1">
+                    Video Title (Telugu & English)
+                  </label>
+                  <Input
+                    value={videoTitle}
+                    onChange={(e) => setVideoTitle(e.target.value)}
+                    placeholder="Enter compelling title..."
+                  />
+                  <span className="text-2xs text-muted-foreground mt-1 block">
+                    {videoTitle.length}/100 characters • Recommended to include #Shorts for vertical videos.
+                  </span>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-foreground">
+                      Description & Automated Chapters
+                    </label>
+                    <Button variant="ghost" size="sm" className="h-6 text-2xs text-primary gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      AI SEO Optimize
+                    </Button>
+                  </div>
+                  <Textarea
+                    rows={6}
+                    value={videoDescription}
+                    onChange={(e) => setVideoDescription(e.target.value)}
+                    placeholder="Write full video description..."
+                    className="font-mono text-xs leading-relaxed"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-foreground block mb-1">Tags / Keywords</label>
+                    <Input
+                      value={tags}
+                      onChange={(e) => setTags(e.target.value)}
+                      placeholder="Comma separated tags..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-foreground block mb-1">Privacy & Release Mode</label>
+                    <Select
+                      value={privacy}
+                      onChange={(e) => setPrivacy(e.target.value)}
+                      options={[
+                        { label: "Public (Instant Release)", value: "public" },
+                        { label: "Scheduled (Pick Time)", value: "scheduled" },
+                        { label: "Unlisted (Review Link)", value: "unlisted" },
+                        { label: "Private", value: "private" },
+                      ]}
+                    />
+                  </div>
+                </div>
+
+                {privacy === "scheduled" && (
+                  <div className="p-3 rounded-lg bg-muted/40 border border-border space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+                      <Calendar className="w-4 h-4 text-primary" />
+                      Select Schedule Date & Time (Asia/Kolkata IST)
+                    </div>
+                    <Input
+                      type="datetime-local"
+                      value={scheduledDate}
+                      onChange={(e) => setScheduledDate(e.target.value)}
+                      className="w-full sm:w-72"
+                    />
+                    <span className="text-2xs text-muted-foreground">
+                      Video will be uploaded immediately as private and flipped to public automatically by YouTube servers.
+                    </span>
+                  </div>
+                )}
+
+                {isUploading && (
+                  <div className="p-4 rounded-xl border border-primary/30 bg-primary/5 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-primary flex items-center gap-2">
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        Uploading Video Chunk to YouTube (Resumable Protocol)...
+                      </span>
+                      <span className="font-bold text-primary">{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {uploadSuccess && (
+                  <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      <div>
+                        <p className="text-xs font-semibold text-emerald-400">Video Successfully Published to YouTube!</p>
+                        <p className="text-2xs text-muted-foreground">
+                          Video ID: yt_live_948a • URL: https://youtube.com/watch?v=yt_live_948a
+                        </p>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="outline" className="gap-1.5 h-8">
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      View on YouTube
+                    </Button>
+                  </div>
+                )}
+
+                <div className="pt-2 flex justify-end gap-3">
+                  <Button variant="outline">Save as Draft</Button>
+                  <Button
+                    variant="primary"
+                    onClick={handleUpload}
+                    disabled={isUploading}
+                    className="gap-2 px-6"
+                  >
+                    <Tv className="w-4 h-4" />
+                    {privacy === "scheduled" ? "Schedule Release" : "Publish to YouTube"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Right Preview Card */}
+            <div className="lg:col-span-4 space-y-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold">Feed Preview</CardTitle>
+                  <CardDescription>How this video will appear on YouTube mobile & desktop</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="relative rounded-xl overflow-hidden aspect-[9/16] bg-black border border-border group">
+                    <img
+                      src="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80"
+                      alt="Video Thumbnail Preview"
+                      className="w-full h-full object-cover opacity-90"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-4">
+                      <Badge variant="brand" className="w-fit mb-2 text-2xs">
+                        Telugu HD • 1080x1920
+                      </Badge>
+                      <p className="text-xs font-bold text-white line-clamp-2">{videoTitle}</p>
+                      <p className="text-2xs text-zinc-300 mt-1">Sir&apos;s Telugu Cinematic Stories</p>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-muted/40 border border-border space-y-2">
+                    <div className="flex items-center justify-between text-2xs">
+                      <span className="text-muted-foreground">Category</span>
+                      <span className="font-semibold text-foreground">Film & Animation (24)</span>
+                    </div>
+                    <div className="flex items-center justify-between text-2xs">
+                      <span className="text-muted-foreground">Default Audio</span>
+                      <span className="font-semibold text-foreground">Telugu (te)</span>
+                    </div>
+                    <div className="flex items-center justify-between text-2xs">
+                      <span className="text-muted-foreground">Made for Kids</span>
+                      <span className="font-semibold text-foreground">No (Self-certified)</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </TabsContent>
 
-        {/* Right Preview Card */}
-        <div className="lg:col-span-4 space-y-6">
+        {/* Tab 2: A/B Title & Hook Variant Generator */}
+        <TabsContent value="ab-variants" className="mt-6 space-y-6">
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">Feed Preview</CardTitle>
-              <CardDescription>How this video will appear on YouTube mobile & desktop</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="relative rounded-xl overflow-hidden aspect-[9/16] bg-black border border-border group">
-                <img
-                  src="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80"
-                  alt="Video Thumbnail Preview"
-                  className="w-full h-full object-cover opacity-90"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-4">
-                  <Badge variant="brand" className="w-fit mb-2 text-2xs">
-                    Telugu HD • 1080x1920
-                  </Badge>
-                  <p className="text-xs font-bold text-white line-clamp-2">{videoTitle}</p>
-                  <p className="text-2xs text-zinc-300 mt-1">Sir&apos;s Telugu Cinematic Stories</p>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-amber-500" />
+                    Agent 13 — YouTube Growth & Title Experimentation
+                  </CardTitle>
+                  <CardDescription>
+                    Generate and simulate 4 distinct psychological A/B title and opening hook strategies tailored to Telugu viewership demographics.
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={variantTopic}
+                    onChange={(e) => setVariantTopic(e.target.value)}
+                    placeholder="Enter story topic or concept..."
+                    className="w-64 text-xs"
+                  />
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleGenerateVariants}
+                    disabled={isLoadingVariants}
+                    className="gap-1.5"
+                  >
+                    {isLoadingVariants ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                    <span>Generate Variants</span>
+                  </Button>
                 </div>
               </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {variants.map((v, idx) => (
+                  <div
+                    key={idx}
+                    className="rounded-xl border border-border p-4 bg-muted/20 hover:bg-muted/30 transition-all space-y-3 relative group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <Badge
+                        variant={
+                          v.style === "Mass Drama"
+                            ? "destructive"
+                            : v.style === "Emotional Appeal"
+                            ? "brand"
+                            : v.style === "Curiosity Hook"
+                            ? "warning"
+                            : "outline"
+                        }
+                        className="text-2xs font-semibold"
+                      >
+                        {v.style}
+                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xs text-muted-foreground">Proj. CTR:</span>
+                        <span className="font-bold text-xs text-emerald-500">{v.projectedCtr}</span>
+                        <Badge variant="outline" className="text-2xs font-mono">
+                          Score: {v.clickScore}/100
+                        </Badge>
+                      </div>
+                    </div>
 
-              <div className="p-3 rounded-lg bg-muted/40 border border-border space-y-2">
-                <div className="flex items-center justify-between text-2xs">
-                  <span className="text-muted-foreground">Category</span>
-                  <span className="font-semibold text-foreground">Film & Animation (24)</span>
+                    <div>
+                      <p className="font-bold text-sm text-foreground">{v.teluguTitle}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{v.englishTitle}</p>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-card border border-border text-xs space-y-1">
+                      <span className="font-semibold text-2xs text-primary flex items-center gap-1">
+                        <Play className="w-3 h-3" />
+                        First 3-Second Spoken Hook Line:
+                      </span>
+                      <p className="italic text-muted-foreground font-sans">&quot;{v.hookLine}&quot;</p>
+                    </div>
+
+                    <p className="text-2xs text-muted-foreground leading-relaxed">{v.explanation}</p>
+
+                    <div className="pt-2 border-t border-border flex justify-end">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => applyVariantToTitle(v)}
+                        className="gap-1.5 text-xs h-7 group-hover:border-primary group-hover:text-primary transition-colors"
+                      >
+                        <Check className="w-3 h-3" />
+                        Apply to Video Title
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab 3: Telugu SEO & Trends Explorer */}
+        <TabsContent value="seo-tags" className="mt-6 space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-emerald-500" />
+                    Telugu High-CTR Keyword & Trend Explorer
+                  </CardTitle>
+                  <CardDescription>
+                    Explore trending regional search terms, low-competition tags, and automated metadata insertion for Telugu audiences.
+                  </CardDescription>
                 </div>
-                <div className="flex items-center justify-between text-2xs">
-                  <span className="text-muted-foreground">Default Audio</span>
-                  <span className="font-semibold text-foreground">Telugu (te)</span>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-3 text-muted-foreground" />
+                    <Input
+                      value={searchKeyword}
+                      onChange={(e) => setSearchKeyword(e.target.value)}
+                      placeholder="Search Telugu trend..."
+                      className="w-56 pl-8 text-xs"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSearchKeywords}
+                    disabled={isSearchingKeywords}
+                    className="gap-1.5"
+                  >
+                    {isSearchingKeywords ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+                    <span>Explore</span>
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={addAllTags} className="gap-1.5">
+                    <Tag className="w-3.5 h-3.5" />
+                    <span>Insert All Into Tags</span>
+                  </Button>
                 </div>
-                <div className="flex items-center justify-between text-2xs">
-                  <span className="text-muted-foreground">Made for Kids</span>
-                  <span className="font-semibold text-foreground">No (Self-certified)</span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {discoveredKeywords.map((kw, i) => (
+                  <div
+                    key={i}
+                    className="p-3 rounded-xl border border-border bg-muted/20 hover:bg-muted/40 transition-colors flex items-center justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-xs text-foreground">{kw.tag}</span>
+                        {kw.isTrending && (
+                          <Badge variant="brand" className="text-[9px] px-1.5 py-0">
+                            Trending
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 text-2xs text-muted-foreground">
+                        <span>Vol: {kw.searchVolume}</span>
+                        <span>&bull;</span>
+                        <span>
+                          Comp:{" "}
+                          <strong
+                            className={
+                              kw.competition === "Low"
+                                ? "text-emerald-500"
+                                : kw.competition === "Medium"
+                                ? "text-amber-500"
+                                : "text-red-500"
+                            }
+                          >
+                            {kw.competition}
+                          </strong>
+                        </span>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => addTagToTags(kw.tag)}
+                      className="h-7 w-7 p-0 rounded-full hover:bg-primary/10 hover:text-primary"
+                    >
+                      <Tag className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 p-4 rounded-xl bg-card border border-border">
+                <span className="text-xs font-semibold text-foreground block mb-2">Current Video Tags Preview:</span>
+                <div className="flex flex-wrap gap-2">
+                  {tags
+                    .split(",")
+                    .map((t) => t.trim())
+                    .filter(Boolean)
+                    .map((t, idx) => (
+                      <Badge key={idx} variant="outline" className="text-2xs py-1 px-2.5 bg-muted/40">
+                        #{t}
+                      </Badge>
+                    ))}
                 </div>
               </div>
             </CardContent>
           </Card>
-        </div>
-      </div>
+        </TabsContent>
+
+        {/* Tab 4: Community Management & Telugu AI Replies */}
+        <TabsContent value="community" className="mt-6 space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Bot className="w-5 h-5 text-blue-500" />
+                    Agent 16 — Community Management & Sentiment Engine
+                  </CardTitle>
+                  <CardDescription>
+                    Real-time Telugu sentiment classification and culturally respectful colloquial Telugu auto-replies.
+                  </CardDescription>
+                </div>
+                <Badge variant="outline" className="border-border text-2xs">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 inline-block" />
+                  Auto-Moderation Active (Filters Telugu Abuse)
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {comments.map((comment) => (
+                <div
+                  key={comment.id}
+                  className="rounded-xl border border-border p-4 bg-muted/20 space-y-3 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={comment.avatar}
+                        alt={comment.author}
+                        className="w-8 h-8 rounded-full object-cover border border-border"
+                      />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-foreground">{comment.author}</span>
+                          <span className="text-2xs text-muted-foreground">{comment.timestamp}</span>
+                        </div>
+                        <p className="text-xs text-foreground font-sans mt-1 leading-relaxed">{comment.text}</p>
+                      </div>
+                    </div>
+                    <Badge
+                      variant={
+                        comment.sentiment === "positive"
+                          ? "success"
+                          : comment.sentiment === "critical"
+                          ? "warning"
+                          : "outline"
+                      }
+                      className="text-2xs capitalize"
+                    >
+                      {comment.sentiment}
+                    </Badge>
+                  </div>
+
+                  {comment.replySent ? (
+                    <div className="ml-11 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs space-y-1">
+                      <div className="flex items-center gap-1.5 text-2xs text-emerald-400 font-semibold">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Reply Published to YouTube Comment Thread
+                      </div>
+                      <p className="text-foreground font-sans">&quot;{comment.aiSuggestedReply}&quot;</p>
+                    </div>
+                  ) : activeReplyId === comment.id ? (
+                    <div className="ml-11 space-y-2 p-3 rounded-lg bg-card border border-primary/30">
+                      <label className="text-2xs font-semibold text-primary flex items-center gap-1.5">
+                        <Bot className="w-3.5 h-3.5" />
+                        Agent 16 Drafted Telugu Reply (Culturally Tailored):
+                      </label>
+                      <Textarea
+                        rows={2}
+                        value={replyDraft}
+                        onChange={(e) => setReplyDraft(e.target.value)}
+                        className="text-xs font-sans"
+                      />
+                      <div className="flex justify-end gap-2 pt-1">
+                        <Button variant="ghost" size="sm" onClick={() => setActiveReplyId(null)} className="h-7 text-xs">
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleSendReply(comment.id)}
+                          className="h-7 text-xs gap-1.5"
+                        >
+                          <Send className="w-3 h-3" />
+                          Approve & Publish Reply
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="ml-11 flex items-center justify-between pt-1 border-t border-border/50 text-2xs">
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <ThumbsUp className="w-3 h-3" /> {comment.likes} Likes
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleOpenReply(comment)}
+                        className="h-7 text-xs gap-1.5 text-primary hover:text-primary"
+                      >
+                        <CornerDownRight className="w-3 h-3" />
+                        View AI Telugu Reply Draft
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Published Videos Table */}
       <Card>
@@ -492,4 +1052,3 @@ export function YouTubeStudioView() {
     </div>
   );
 }
-

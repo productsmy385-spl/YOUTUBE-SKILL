@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   AlertCircle,
   ArrowRight,
@@ -78,57 +79,9 @@ export function ProductionWorkspaceView() {
   // Scene tweak modal state
   const [activeTweakScene, setActiveTweakScene] = useState<SceneItem | null>(null);
   const [tweakFeedback, setTweakFeedback] = useState<string>("");
+  const [projectTitle, setProjectTitle] = useState<string>("Active Telugu Video Production");
 
-  const [scenes, setScenes] = useState<SceneItem[]>([
-    {
-      id: 1,
-      number: "Scene 01",
-      location: "హైదరాబాద్ కార్పొరేట్ ఆఫీస్ కారిడార్ (Office Corridor)",
-      shotType: "Medium Close-up",
-      cameraMovement: "Tracking forward",
-      emotion: "ఆందోళన & ఆత్రుత (Anxious Rush)",
-      dialogueTelugu: "రవి: అరె సురేష్! బాస్ ఇంకా రాలేదా? అబ్బా దేవుడా బ్రతికించావు!",
-      visualPrompt: "A young Telugu software employee in semi-formal shirt rushing through a modern tech office glass corridor, wiping sweat, checking his wristwatch, panicked expression.",
-      duration: "4.5s",
-      status: "Completed",
-    },
-    {
-      id: 2,
-      number: "Scene 02",
-      location: "క్యూబికల్ డెస్క్ ఏరియా (Cubicle Area)",
-      shotType: "Over-the-shoulder",
-      cameraMovement: "Static lock-off",
-      emotion: "వ్యంగ్యం & గుసగుస (Sarcastic Whisper)",
-      dialogueTelugu: "సురేష్: వెనక్కి తిరిగి చూడు రా బాబు... బాస్ నీ వెనకాలే నిలబడి 10 నిమిషాల నుంచి వింటున్నారు!",
-      visualPrompt: "Close shot of colleague whispering while pointing his eyes suspiciously toward the background. Depth of field reveals strict manager standing behind arms crossed.",
-      duration: "5.0s",
-      status: "Completed",
-    },
-    {
-      id: 3,
-      number: "Scene 03",
-      location: "మేనేజర్ క్యాబిన్ ఎంట్రన్స్ (Manager Standpoint)",
-      shotType: "Whip Pan to Close-up",
-      cameraMovement: "Dynamic Whip Pan",
-      emotion: "షాక్ & నవ్వుతూ కవర్ చేయడం (Shock to Awkward Smile)",
-      dialogueTelugu: "రవి: (షాక్ అయ్యి నవ్వుతూ) నమస్తే సార్! మీరు ఎప్పుడు వచ్చారు? ట్రాఫిక్ బాగుందా?",
-      visualPrompt: "Dramatic slow-motion turnaround. Employee's face transitions instantly from sheer terror to a hilarious plastic respectful smile with folded hands, hyper-realistic facial comedy.",
-      duration: "6.0s",
-      status: "Completed",
-    },
-    {
-      id: 4,
-      number: "Scene 04",
-      location: "ఫైనల్ పంచ్ & రియాక్షన్ (Final Reaction & Outro)",
-      shotType: "Split Screen reaction",
-      cameraMovement: "Slow push-in",
-      emotion: "కామెడీ ఎండ్ (Punchline Laugh)",
-      dialogueTelugu: "బాస్: ట్రాఫిక్ బాగుంది రవి... రేపటినుంచి నీకు రోజూ లీవ్ కావాలా?",
-      visualPrompt: "Manager calmly handing him an office file with a deadpan stare, comic timing sound effect cue.",
-      duration: "4.5s",
-      status: "Completed",
-    },
-  ]);
+  const [scenes, setScenes] = useState<SceneItem[]>([]);
 
   const handleOpenTweak = (scene: SceneItem) => {
     setActiveTweakScene(scene);
@@ -201,7 +154,7 @@ export function ProductionWorkspaceView() {
             </Badge>
           </div>
           <h1 className="text-xl font-bold tracking-tight text-foreground mt-1">
-            ఆఫీస్ లేట్ ఎంట్రీ ఫన్నీ డైలాగ్ (Office Late Entry Comedy)
+            {projectTitle}
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
             Duration: 45s &bull; 4 Scenes &bull; Telugu (te-IN) &bull; Music: Ducked Comic BGM &bull; Model: Gemini Veo
@@ -241,7 +194,20 @@ export function ProductionWorkspaceView() {
       </div>
 
       {/* Workspace Pipeline Stage Tabs */}
-      <Tabs defaultValue="storyboard" value={activeTab} onValueChange={setActiveTab}>
+      {scenes.length === 0 ? (
+        <EmptyState
+          icon={<Film className="h-8 w-8" />}
+          title="No Active Production Pipeline"
+          description="You don't have an active video production session loaded. Launch a video project by entering a Telugu dialogue, script idea, or voice recording."
+          action={{
+            label: "Create Video Project",
+            onClick: () => {
+              window.location.href = "/studio/create";
+            },
+          }}
+        />
+      ) : (
+        <Tabs defaultValue="storyboard" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 w-full h-auto p-1 bg-muted/80 gap-1">
           <TabsTrigger value="brief" className="gap-1.5 py-2">
             <FileText className="h-3.5 w-3.5" />
@@ -578,8 +544,8 @@ export function ProductionWorkspaceView() {
                         <Badge variant="brand" className="absolute top-2 left-2 text-[9px]">
                           9:16 Shorts
                         </Badge>
-                        <p className="text-xs font-bold text-white bg-black/70 p-1 rounded font-sans">
-                          ఆఫీస్ లేట్ ఎంట్రీ! బాస్ రియాక్షన్ చూడండి! 😂
+                        <p className="text-xs font-bold text-white bg-black/70 p-1 rounded font-sans truncate">
+                          {projectTitle}
                         </p>
                       </div>
                       <p className="text-xs font-bold text-foreground truncate">{t}</p>
@@ -593,7 +559,7 @@ export function ProductionWorkspaceView() {
                 <div className="rounded-lg border border-border p-3 bg-muted/40 space-y-1">
                   <span className="text-2xs font-semibold uppercase text-muted-foreground">YouTube Shorts Title:</span>
                   <p className="text-xs font-bold text-foreground">
-                    ఆఫీస్ లేట్ ఎంట్రీ ఫన్నీ సీన్! 😂 బాస్ వెనకాలే ఉంటే పరిస్థితి ఏంటి? #Shorts #TeluguComedy
+                    {projectTitle} | Telugu AI Story #Shorts
                   </p>
                 </div>
                 <div className="rounded-lg border border-border p-3 bg-muted/40 space-y-1">
@@ -640,6 +606,7 @@ export function ProductionWorkspaceView() {
           </Card>
         </TabsContent>
       </Tabs>
+      )}
 
       {/* Modal: Tweak Scene Feedback */}
       {activeTweakScene && (

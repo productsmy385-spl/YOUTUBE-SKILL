@@ -110,6 +110,19 @@ CREATE TABLE "production_briefs" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "project_uploaded_assets" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"project_id" uuid NOT NULL,
+	"media_asset_id" uuid NOT NULL,
+	"asset_role" text DEFAULT 'reference_image' NOT NULL,
+	"label" text NOT NULL,
+	"ai_prompt_directive" text,
+	"target_scene_order" integer,
+	"is_primary" boolean DEFAULT false NOT NULL,
+	"metadata" jsonb,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "scenes" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"storyboard_version_id" uuid NOT NULL,
@@ -236,10 +249,9 @@ CREATE TABLE "media_variants" (
 CREATE TABLE "ai_agent_artifacts" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"agent_run_id" uuid NOT NULL,
-	"project_id" uuid NOT NULL,
 	"artifact_type" text NOT NULL,
-	"artifact_payload" jsonb NOT NULL,
-	"is_active" boolean DEFAULT true NOT NULL,
+	"content" jsonb NOT NULL,
+	"version" integer DEFAULT 1 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -287,25 +299,6 @@ CREATE TABLE "ai_skills" (
 	"tool_definitions" jsonb NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "ai_skills_skill_code_unique" UNIQUE("skill_code")
-);
---> statement-breakpoint
-CREATE TABLE "ai_workflow_executions" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"workflow_id" uuid NOT NULL,
-	"project_id" uuid NOT NULL,
-	"current_step_index" integer DEFAULT 0 NOT NULL,
-	"status" text DEFAULT 'idle' NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "ai_workflows" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"name" text NOT NULL,
-	"description" text,
-	"steps_config" jsonb NOT NULL,
-	"is_default" boolean DEFAULT false NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "generation_jobs" (
@@ -385,41 +378,20 @@ CREATE TABLE "render_presets" (
 	"audio_bitrate" text DEFAULT '320k' NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "subtitles" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"project_id" uuid NOT NULL,
-	"language" text DEFAULT 'te-IN' NOT NULL,
-	"vtt_storage_key" text,
-	"srt_storage_key" text,
-	"cues_json" jsonb NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "thumbnails" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"project_id" uuid NOT NULL,
-	"image_asset_id" uuid NOT NULL,
-	"concept_name" text NOT NULL,
-	"telugu_overlay_text" text,
-	"is_approved" boolean DEFAULT false NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE "timeline_clips" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"timeline_track_id" uuid NOT NULL,
+	"track_id" uuid NOT NULL,
 	"asset_id" uuid NOT NULL,
-	"start_time" numeric NOT NULL,
-	"duration" numeric NOT NULL,
-	"in_point" numeric DEFAULT '0' NOT NULL,
-	"out_point" numeric NOT NULL
+	"start_offset_seconds" numeric NOT NULL,
+	"duration_seconds" numeric NOT NULL,
+	"source_in_seconds" numeric DEFAULT '0' NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "timeline_tracks" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"timeline_id" uuid NOT NULL,
 	"track_type" text NOT NULL,
-	"track_index" integer NOT NULL,
+	"track_index" integer DEFAULT 0 NOT NULL,
 	"volume" numeric DEFAULT '1.0' NOT NULL,
 	"is_muted" boolean DEFAULT false NOT NULL
 );
@@ -642,12 +614,18 @@ ALTER TABLE "workspaces" ADD CONSTRAINT "workspaces_owner_id_users_id_fk" FOREIG
 ALTER TABLE "character_consents" ADD CONSTRAINT "character_consents_character_id_characters_id_fk" FOREIGN KEY ("character_id") REFERENCES "public"."characters"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "character_consents" ADD CONSTRAINT "character_consents_verified_by_users_id_fk" FOREIGN KEY ("verified_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "character_references" ADD CONSTRAINT "character_references_character_id_characters_id_fk" FOREIGN KEY ("character_id") REFERENCES "public"."characters"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "character_references" ADD CONSTRAINT "character_references_asset_id_media_assets_id_fk" FOREIGN KEY ("asset_id") REFERENCES "public"."media_assets"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "characters" ADD CONSTRAINT "characters_workspace_id_workspaces_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "production_briefs" ADD CONSTRAINT "production_briefs_project_id_video_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."video_projects"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "production_briefs" ADD CONSTRAINT "production_briefs_raw_voice_asset_id_media_assets_id_fk" FOREIGN KEY ("raw_voice_asset_id") REFERENCES "public"."media_assets"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "project_uploaded_assets" ADD CONSTRAINT "project_uploaded_assets_project_id_video_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."video_projects"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "project_uploaded_assets" ADD CONSTRAINT "project_uploaded_assets_media_asset_id_media_assets_id_fk" FOREIGN KEY ("media_asset_id") REFERENCES "public"."media_assets"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scenes" ADD CONSTRAINT "scenes_storyboard_version_id_storyboard_versions_id_fk" FOREIGN KEY ("storyboard_version_id") REFERENCES "public"."storyboard_versions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "script_versions" ADD CONSTRAINT "script_versions_script_id_scripts_id_fk" FOREIGN KEY ("script_id") REFERENCES "public"."scripts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scripts" ADD CONSTRAINT "scripts_project_id_video_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."video_projects"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shots" ADD CONSTRAINT "shots_scene_id_scenes_id_fk" FOREIGN KEY ("scene_id") REFERENCES "public"."scenes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "shots" ADD CONSTRAINT "shots_reference_image_asset_id_media_assets_id_fk" FOREIGN KEY ("reference_image_asset_id") REFERENCES "public"."media_assets"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "shots" ADD CONSTRAINT "shots_video_clip_asset_id_media_assets_id_fk" FOREIGN KEY ("video_clip_asset_id") REFERENCES "public"."media_assets"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "storyboard_versions" ADD CONSTRAINT "storyboard_versions_storyboard_id_storyboards_id_fk" FOREIGN KEY ("storyboard_id") REFERENCES "public"."storyboards"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "storyboards" ADD CONSTRAINT "storyboards_project_id_video_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."video_projects"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "video_projects" ADD CONSTRAINT "video_projects_workspace_id_workspaces_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -658,12 +636,9 @@ ALTER TABLE "media_assets" ADD CONSTRAINT "media_assets_folder_id_media_folders_
 ALTER TABLE "media_folders" ADD CONSTRAINT "media_folders_workspace_id_workspaces_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "media_variants" ADD CONSTRAINT "media_variants_asset_id_media_assets_id_fk" FOREIGN KEY ("asset_id") REFERENCES "public"."media_assets"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ai_agent_artifacts" ADD CONSTRAINT "ai_agent_artifacts_agent_run_id_ai_agent_runs_id_fk" FOREIGN KEY ("agent_run_id") REFERENCES "public"."ai_agent_runs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "ai_agent_artifacts" ADD CONSTRAINT "ai_agent_artifacts_project_id_video_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."video_projects"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ai_agent_runs" ADD CONSTRAINT "ai_agent_runs_project_id_video_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."video_projects"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ai_agent_runs" ADD CONSTRAINT "ai_agent_runs_agent_id_ai_agents_id_fk" FOREIGN KEY ("agent_id") REFERENCES "public"."ai_agents"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ai_agent_tasks" ADD CONSTRAINT "ai_agent_tasks_agent_run_id_ai_agent_runs_id_fk" FOREIGN KEY ("agent_run_id") REFERENCES "public"."ai_agent_runs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "ai_workflow_executions" ADD CONSTRAINT "ai_workflow_executions_workflow_id_ai_workflows_id_fk" FOREIGN KEY ("workflow_id") REFERENCES "public"."ai_workflows"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "ai_workflow_executions" ADD CONSTRAINT "ai_workflow_executions_project_id_video_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."video_projects"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "generation_jobs" ADD CONSTRAINT "generation_jobs_project_id_video_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."video_projects"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "music_tracks" ADD CONSTRAINT "music_tracks_audio_asset_id_media_assets_id_fk" FOREIGN KEY ("audio_asset_id") REFERENCES "public"."media_assets"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sound_effects" ADD CONSTRAINT "sound_effects_audio_asset_id_media_assets_id_fk" FOREIGN KEY ("audio_asset_id") REFERENCES "public"."media_assets"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -676,10 +651,7 @@ ALTER TABLE "voice_generations" ADD CONSTRAINT "voice_generations_audio_asset_id
 ALTER TABLE "render_jobs" ADD CONSTRAINT "render_jobs_project_id_video_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."video_projects"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "render_jobs" ADD CONSTRAINT "render_jobs_render_preset_id_render_presets_id_fk" FOREIGN KEY ("render_preset_id") REFERENCES "public"."render_presets"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "render_jobs" ADD CONSTRAINT "render_jobs_output_asset_id_media_assets_id_fk" FOREIGN KEY ("output_asset_id") REFERENCES "public"."media_assets"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "subtitles" ADD CONSTRAINT "subtitles_project_id_video_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."video_projects"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "thumbnails" ADD CONSTRAINT "thumbnails_project_id_video_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."video_projects"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "thumbnails" ADD CONSTRAINT "thumbnails_image_asset_id_media_assets_id_fk" FOREIGN KEY ("image_asset_id") REFERENCES "public"."media_assets"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "timeline_clips" ADD CONSTRAINT "timeline_clips_timeline_track_id_timeline_tracks_id_fk" FOREIGN KEY ("timeline_track_id") REFERENCES "public"."timeline_tracks"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "timeline_clips" ADD CONSTRAINT "timeline_clips_track_id_timeline_tracks_id_fk" FOREIGN KEY ("track_id") REFERENCES "public"."timeline_tracks"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "timeline_clips" ADD CONSTRAINT "timeline_clips_asset_id_media_assets_id_fk" FOREIGN KEY ("asset_id") REFERENCES "public"."media_assets"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "timeline_tracks" ADD CONSTRAINT "timeline_tracks_timeline_id_video_timelines_id_fk" FOREIGN KEY ("timeline_id") REFERENCES "public"."video_timelines"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "video_timelines" ADD CONSTRAINT "video_timelines_project_id_video_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."video_projects"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -703,4 +675,71 @@ ALTER TABLE "automation_executions" ADD CONSTRAINT "automation_executions_automa
 ALTER TABLE "automation_executions" ADD CONSTRAINT "automation_executions_project_id_video_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."video_projects"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "automation_rules" ADD CONSTRAINT "automation_rules_workspace_id_workspaces_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "cost_budgets" ADD CONSTRAINT "cost_budgets_workspace_id_workspaces_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "notifications" ADD CONSTRAINT "notifications_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "notifications" ADD CONSTRAINT "notifications_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "idx_character_consents_character" ON "character_consents" USING btree ("character_id");--> statement-breakpoint
+CREATE INDEX "idx_character_refs_character" ON "character_references" USING btree ("character_id");--> statement-breakpoint
+CREATE INDEX "idx_character_refs_asset" ON "character_references" USING btree ("asset_id");--> statement-breakpoint
+CREATE INDEX "idx_characters_workspace" ON "characters" USING btree ("workspace_id");--> statement-breakpoint
+CREATE INDEX "idx_production_briefs_project" ON "production_briefs" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX "idx_proj_uploaded_assets_project" ON "project_uploaded_assets" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX "idx_proj_uploaded_assets_media" ON "project_uploaded_assets" USING btree ("media_asset_id");--> statement-breakpoint
+CREATE INDEX "idx_proj_uploaded_assets_role" ON "project_uploaded_assets" USING btree ("asset_role");--> statement-breakpoint
+CREATE INDEX "idx_scenes_storyboard_version" ON "scenes" USING btree ("storyboard_version_id");--> statement-breakpoint
+CREATE INDEX "idx_scenes_order" ON "scenes" USING btree ("scene_order");--> statement-breakpoint
+CREATE INDEX "idx_script_versions_script" ON "script_versions" USING btree ("script_id");--> statement-breakpoint
+CREATE INDEX "idx_scripts_project" ON "scripts" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX "idx_shots_scene" ON "shots" USING btree ("scene_id");--> statement-breakpoint
+CREATE INDEX "idx_storyboard_versions_storyboard" ON "storyboard_versions" USING btree ("storyboard_id");--> statement-breakpoint
+CREATE INDEX "idx_storyboards_project" ON "storyboards" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX "idx_video_projects_workspace" ON "video_projects" USING btree ("workspace_id");--> statement-breakpoint
+CREATE INDEX "idx_video_projects_creator" ON "video_projects" USING btree ("creator_id");--> statement-breakpoint
+CREATE INDEX "idx_video_projects_status" ON "video_projects" USING btree ("status");--> statement-breakpoint
+CREATE INDEX "idx_video_projects_platform" ON "video_projects" USING btree ("target_platform");--> statement-breakpoint
+CREATE INDEX "idx_video_projects_created_at" ON "video_projects" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "idx_asset_licenses_asset" ON "asset_licenses" USING btree ("asset_id");--> statement-breakpoint
+CREATE INDEX "idx_media_assets_workspace" ON "media_assets" USING btree ("workspace_id");--> statement-breakpoint
+CREATE INDEX "idx_media_assets_folder" ON "media_assets" USING btree ("folder_id");--> statement-breakpoint
+CREATE INDEX "idx_media_assets_type" ON "media_assets" USING btree ("asset_type");--> statement-breakpoint
+CREATE INDEX "idx_media_assets_created" ON "media_assets" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "idx_media_folders_workspace" ON "media_folders" USING btree ("workspace_id");--> statement-breakpoint
+CREATE INDEX "idx_media_folders_parent" ON "media_folders" USING btree ("parent_id");--> statement-breakpoint
+CREATE INDEX "idx_media_variants_asset" ON "media_variants" USING btree ("asset_id");--> statement-breakpoint
+CREATE INDEX "idx_media_variants_name" ON "media_variants" USING btree ("variant_name");--> statement-breakpoint
+CREATE INDEX "idx_ai_agent_artifacts_run" ON "ai_agent_artifacts" USING btree ("agent_run_id");--> statement-breakpoint
+CREATE INDEX "idx_ai_agent_artifacts_type" ON "ai_agent_artifacts" USING btree ("artifact_type");--> statement-breakpoint
+CREATE INDEX "idx_ai_agent_runs_project" ON "ai_agent_runs" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX "idx_ai_agent_runs_agent" ON "ai_agent_runs" USING btree ("agent_id");--> statement-breakpoint
+CREATE INDEX "idx_ai_agent_runs_status" ON "ai_agent_runs" USING btree ("status");--> statement-breakpoint
+CREATE INDEX "idx_ai_agent_tasks_run" ON "ai_agent_tasks" USING btree ("agent_run_id");--> statement-breakpoint
+CREATE INDEX "idx_gen_jobs_project" ON "generation_jobs" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX "idx_gen_jobs_status" ON "generation_jobs" USING btree ("status");--> statement-breakpoint
+CREATE INDEX "idx_gen_jobs_type" ON "generation_jobs" USING btree ("job_type");--> statement-breakpoint
+CREATE INDEX "idx_music_tracks_asset" ON "music_tracks" USING btree ("audio_asset_id");--> statement-breakpoint
+CREATE INDEX "idx_music_tracks_genre" ON "music_tracks" USING btree ("genre");--> statement-breakpoint
+CREATE INDEX "idx_sound_effects_asset" ON "sound_effects" USING btree ("audio_asset_id");--> statement-breakpoint
+CREATE INDEX "idx_sound_effects_cat" ON "sound_effects" USING btree ("category");--> statement-breakpoint
+CREATE INDEX "idx_video_gens_job" ON "video_generations" USING btree ("generation_job_id");--> statement-breakpoint
+CREATE INDEX "idx_video_gens_scene" ON "video_generations" USING btree ("scene_id");--> statement-breakpoint
+CREATE INDEX "idx_voice_gens_job" ON "voice_generations" USING btree ("generation_job_id");--> statement-breakpoint
+CREATE INDEX "idx_voice_gens_scene" ON "voice_generations" USING btree ("scene_id");--> statement-breakpoint
+CREATE INDEX "idx_render_jobs_project" ON "render_jobs" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX "idx_render_jobs_status" ON "render_jobs" USING btree ("status");--> statement-breakpoint
+CREATE INDEX "idx_timeline_clips_track" ON "timeline_clips" USING btree ("track_id");--> statement-breakpoint
+CREATE INDEX "idx_timeline_clips_asset" ON "timeline_clips" USING btree ("asset_id");--> statement-breakpoint
+CREATE INDEX "idx_timeline_tracks_timeline" ON "timeline_tracks" USING btree ("timeline_id");--> statement-breakpoint
+CREATE INDEX "idx_video_timelines_project" ON "video_timelines" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX "idx_ig_accounts_social" ON "instagram_accounts" USING btree ("social_account_id");--> statement-breakpoint
+CREATE INDEX "idx_oauth_logs_social" ON "oauth_connection_logs" USING btree ("social_account_id");--> statement-breakpoint
+CREATE INDEX "idx_oauth_creds_social" ON "oauth_credentials" USING btree ("social_account_id");--> statement-breakpoint
+CREATE INDEX "idx_published_videos_job" ON "published_videos" USING btree ("publishing_job_id");--> statement-breakpoint
+CREATE INDEX "idx_published_videos_platform" ON "published_videos" USING btree ("platform");--> statement-breakpoint
+CREATE INDEX "idx_pub_jobs_project" ON "publishing_jobs" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX "idx_pub_jobs_social" ON "publishing_jobs" USING btree ("social_account_id");--> statement-breakpoint
+CREATE INDEX "idx_pub_jobs_status" ON "publishing_jobs" USING btree ("status");--> statement-breakpoint
+CREATE INDEX "idx_pub_schedules_project" ON "publishing_schedules" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX "idx_pub_schedules_social" ON "publishing_schedules" USING btree ("social_account_id");--> statement-breakpoint
+CREATE INDEX "idx_pub_schedules_time" ON "publishing_schedules" USING btree ("scheduled_time");--> statement-breakpoint
+CREATE INDEX "idx_social_accounts_workspace" ON "social_accounts" USING btree ("workspace_id");--> statement-breakpoint
+CREATE INDEX "idx_social_accounts_platform" ON "social_accounts" USING btree ("platform");--> statement-breakpoint
+CREATE INDEX "idx_video_meta_project" ON "video_metadata" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX "idx_yt_channels_social" ON "youtube_channels" USING btree ("social_account_id");

@@ -7,4 +7,4 @@ export * from "./rendering";
 export * from "./publishing";
 export * from "./analytics";
 export * from "./automation";
-
+export * from "./relations";

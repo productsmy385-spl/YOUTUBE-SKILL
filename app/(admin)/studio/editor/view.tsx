@@ -87,10 +87,10 @@ export function TimelineEditorView() {
               {/* Burned Telugu Subtitles */}
               <div className="z-10 bg-black/80 backdrop-blur-xs p-2.5 rounded-lg text-center border border-white/10 mb-2">
                 <p className="text-xs font-bold text-white font-sans leading-relaxed">
-                  &quot;నమస్తే సార్! మీరు ఎప్పుడు వచ్చారు?&quot;
+                  &quot;హై-డెఫినిషన్ తెలుగు ఉపశీర్షికలు (Telugu Subtitles)&quot;
                 </p>
                 <p className="text-[10px] text-white/60 font-mono mt-0.5">
-                  (Namaste sir! When did you arrive?)
+                  (Automated Unicode Telugu Font Shaping with HarfBuzz)
                 </p>
               </div>
             </div>
@@ -155,7 +155,7 @@ export function TimelineEditorView() {
                   <span className="font-mono">te-IN WAV</span>
                 </div>
                 <div className="grid grid-cols-4 gap-1.5 h-10 bg-muted/60 rounded-lg p-1 border border-border">
-                  {["రవి (Ravi)", "సురేష్ (Suresh)", "రవి (Ravi Shock)", "బాస్ (Boss)"].map((s, i) => (
+                  {["Voice Stem 1", "Voice Stem 2", "Voice Stem 3", "Voice Stem 4"].map((s, i) => (
                     <div
                       key={i}
                       className="rounded bg-success/20 border border-success/40 flex items-center justify-center text-2xs font-semibold text-success px-1 truncate"

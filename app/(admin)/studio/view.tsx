@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   AlertCircle,
   ArrowRight,
@@ -33,81 +34,76 @@ import {
   Video,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // The 16 Specialized AI Agents Swarm
 const studioAgents = [
-  { id: "01", name: "Master Orchestrator", role: "Workflow & Cost Coordination", status: "Active", calls: "1,248" },
-  { id: "02", name: "Creative Director", role: "Hooks, Tone & Arc Analysis", status: "Active", calls: "982" },
-  { id: "03", name: "Telugu Script Writer", role: "Natural Telugu Dialogue & Cues", status: "Active", calls: "1,140" },
-  { id: "04", name: "Film Director", role: "Cinematic Storyboard & Prompts", status: "Active", calls: "890" },
-  { id: "05", name: "Character Designer", role: "Face & Visual Continuity Bible", status: "Active", calls: "640" },
-  { id: "06", name: "Gemini Video Agent", role: "Async Video Clip Generation", status: "Active", calls: "420" },
-  { id: "07", name: "Telugu Voice Director", role: "Emotional Telugu TTS & Normalization", status: "Active", calls: "1,050" },
-  { id: "08", name: "Music Director", role: "Licensed Score Selection & Ducking", status: "Active", calls: "730" },
-  { id: "09", name: "Sound Designer", role: "Ambient Foley & SFX Transitions", status: "Active", calls: "690" },
-  { id: "10", name: "Video Editor", role: "FFmpeg Assembly & Telugu Subtitles", status: "Active", calls: "510" },
-  { id: "11", name: "Thumbnail Designer", role: "Telugu Text Overlay & Expressions", status: "Active", calls: "840" },
-  { id: "12", name: "SEO & Metadata", role: "Titles, Descriptions & Pinned CTA", status: "Active", calls: "920" },
-  { id: "13", name: "Quality Control", role: "Aspect, Clipping & Subtitle Sync", status: "Active", calls: "510" },
-  { id: "14", name: "YouTube Operations", role: "OAuth 2.0 & Resumable Uploads", status: "Connected", calls: "380" },
-  { id: "15", name: "Instagram Operations", role: "Meta Graph API Reels Publisher", status: "Ready", calls: "120" },
-  { id: "16", name: "Analytics Agent", role: "Audience Retention & Insights", status: "Active", calls: "1,450" },
+  { id: "01", name: "Master Orchestrator", role: "Workflow & Cost Coordination", status: "Active", calls: "0" },
+  { id: "02", name: "Creative Director", role: "Hooks, Tone & Arc Analysis", status: "Active", calls: "0" },
+  { id: "03", name: "Telugu Script Writer", role: "Natural Telugu Dialogue & Cues", status: "Active", calls: "0" },
+  { id: "04", name: "Film Director", role: "Cinematic Storyboard & Prompts", status: "Active", calls: "0" },
+  { id: "05", name: "Character Designer", role: "Face & Visual Continuity Bible", status: "Active", calls: "0" },
+  { id: "06", name: "Gemini Video Agent", role: "Async Video Clip Generation", status: "Active", calls: "0" },
+  { id: "07", name: "Telugu Voice Director", role: "Emotional Telugu TTS & Normalization", status: "Active", calls: "0" },
+  { id: "08", name: "Music Director", role: "Licensed Score Selection & Ducking", status: "Active", calls: "0" },
+  { id: "09", name: "Sound Designer", role: "Ambient Foley & SFX Transitions", status: "Active", calls: "0" },
+  { id: "10", name: "Video Editor", role: "FFmpeg Assembly & Telugu Subtitles", status: "Active", calls: "0" },
+  { id: "11", name: "Thumbnail Designer", role: "Telugu Text Overlay & Expressions", status: "Active", calls: "0" },
+  { id: "12", name: "SEO & Metadata", role: "Titles, Descriptions & Pinned CTA", status: "Active", calls: "0" },
+  { id: "13", name: "Quality Control", role: "Aspect, Clipping & Subtitle Sync", status: "Active", calls: "0" },
+  { id: "14", name: "YouTube Operations", role: "OAuth 2.0 & Resumable Uploads", status: "Active", calls: "0" },
+  { id: "15", name: "Instagram Operations", role: "Meta Graph API Reels Publisher", status: "Active", calls: "0" },
+  { id: "16", name: "Analytics Agent", role: "Audience Retention & Insights", status: "Active", calls: "0" },
 ];
 
-const activeProjects = [
-  {
-    id: "proj-101",
-    title: "ఆఫీస్ లేట్ ఎంట్రీ ఫన్నీ డైలాగ్ (Office Late Entry Comedy)",
-    platform: "YouTube Shorts",
-    ratio: "9:16",
-    duration: "45s",
-    stage: "Awaiting Creator Approval",
-    stageBadge: "warning",
-    progress: 85,
-    scenes: 5,
-    updated: "10 mins ago",
-  },
-  {
-    id: "proj-102",
-    title: "అమ్మ ప్రేమ ఎమోషనల్ సీన్ (Mother's Love Emotion)",
-    platform: "Instagram Reels",
-    ratio: "9:16",
-    duration: "60s",
-    stage: "Voice Synthesis & Normalization",
-    stageBadge: "info",
-    progress: 60,
-    scenes: 6,
-    updated: "35 mins ago",
-  },
-  {
-    id: "proj-103",
-    title: "తెలుగు సినీ ఇండస్ట్రీ సక్సెస్ సీక్రెట్ (Industry Success Story)",
-    platform: "YouTube Long",
-    ratio: "16:9",
-    duration: "3m 45s",
-    stage: "Gemini Video Rendering",
-    stageBadge: "default",
-    progress: 40,
-    scenes: 12,
-    updated: "1 hour ago",
-  },
-  {
-    id: "proj-104",
-    title: "గ్రామదేవత ఉత్సవం భక్తి ప్రసంగం (Temple Festival Devotion)",
-    platform: "YouTube Shorts",
-    ratio: "9:16",
-    duration: "58s",
-    stage: "Scheduled for Today, 8:00 PM IST",
-    stageBadge: "success",
-    progress: 100,
-    scenes: 7,
-    updated: "2 hours ago",
-  },
-];
+interface ProjectItem {
+  id: string;
+  title: string;
+  platform: string;
+  ratio: string;
+  duration: string;
+  stage: string;
+  stageBadge: string;
+  progress: number;
+  scenes: number;
+  updated: string;
+}
 
 export function StudioOverviewView() {
   const [selectedTab, setSelectedTab] = useState<"projects" | "agents" | "pipeline">("projects");
+  const [projects, setProjects] = useState<ProjectItem[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    async function loadProjects() {
+      try {
+        const res = await fetch("/api/projects");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.projects && Array.isArray(data.projects)) {
+            const mapped = data.projects.map((p: any) => ({
+              id: p.id,
+              title: p.title || "Untitled Project",
+              platform: p.targetPlatform === "youtube_shorts" ? "YouTube Shorts" : p.targetPlatform === "instagram_reels" ? "Instagram Reels" : "YouTube Long",
+              ratio: p.targetAspectRatio || "9:16",
+              duration: `${p.targetDurationSeconds || 45}s`,
+              stage: p.status === "awaiting_approval" ? "Awaiting Approval" : p.status === "published" ? "Published" : p.status === "generating_assets" ? "Generating Clips" : "Production Draft",
+              stageBadge: p.status === "published" ? "success" : p.status === "awaiting_approval" ? "warning" : "default",
+              progress: p.status === "published" ? 100 : p.status === "awaiting_approval" ? 85 : 25,
+              scenes: 4,
+              updated: "Recently",
+            }));
+            setProjects(mapped);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load projects:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadProjects();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -146,12 +142,16 @@ export function StudioOverviewView() {
             </div>
             <div className="mt-3 flex items-baseline gap-2">
               <p className="text-2xl font-bold tracking-tight text-foreground font-sans">
-                <AnimatedCounter value={18} />
+                <AnimatedCounter value={projects.length} />
               </p>
-              <span className="text-xs font-medium text-success">+4 today</span>
+              <span className="text-xs font-medium text-success">
+                {projects.length > 0 ? `${projects.length} active` : "Ready"}
+              </span>
             </div>
             <p className="mt-1 text-2xs text-muted-foreground">
-              4 awaiting approval &bull; 6 generating
+              {projects.length > 0
+                ? `${projects.filter((p) => p.progress < 100).length} in progress &bull; ${projects.filter((p) => p.progress === 100).length} ready`
+                : "No active video workflows in queue"}
             </p>
           </CardContent>
         </Card>
@@ -160,7 +160,7 @@ export function StudioOverviewView() {
           <CardContent className="p-5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Telugu Voice Synthesized
+                Telugu Voice Engine
               </span>
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <Mic className="h-4 w-4" />
@@ -168,7 +168,7 @@ export function StudioOverviewView() {
             </div>
             <div className="mt-3 flex items-baseline gap-2">
               <p className="text-2xl font-bold tracking-tight text-foreground font-sans">
-                <AnimatedCounter value={142} />
+                Agent 07
               </p>
               <span className="text-xs font-medium text-success">100% natural te-IN</span>
             </div>
@@ -190,12 +190,12 @@ export function StudioOverviewView() {
             </div>
             <div className="mt-3 flex items-baseline gap-2">
               <p className="text-2xl font-bold tracking-tight text-foreground font-sans">
-                <AnimatedCounter value={28} />
+                <AnimatedCounter value={projects.filter((p) => p.stage === "Published").length} />
               </p>
-              <span className="text-xs font-medium text-muted-foreground">Shorts &amp; Reels</span>
+              <span className="text-xs font-medium text-muted-foreground">Published</span>
             </div>
             <p className="mt-1 text-2xs text-muted-foreground">
-              5 scheduled for next 48h (Asia/Kolkata)
+              Shorts, Reels &amp; Long-form multi-publish ready
             </p>
           </CardContent>
         </Card>
@@ -219,7 +219,7 @@ export function StudioOverviewView() {
               </Badge>
             </div>
             <p className="mt-1 text-2xs text-muted-foreground">
-              FFmpeg worker connected &bull; Mock mode active
+              Master Orchestrator &bull; Drizzle ORM connected
             </p>
           </CardContent>
         </Card>
@@ -264,7 +264,7 @@ export function StudioOverviewView() {
               onClick={() => setSelectedTab("projects")}
               className="text-xs"
             >
-              Active Productions ({activeProjects.length})
+              Active Productions ({projects.length})
             </Button>
             <Button
               variant={selectedTab === "agents" ? "default" : "ghost"}
@@ -281,80 +281,103 @@ export function StudioOverviewView() {
         </div>
 
         {selectedTab === "projects" && (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {activeProjects.map((project) => (
-              <Card key={project.id} className="border-border bg-card shadow-card transition-all hover:border-primary/30">
-                <CardHeader className="p-5 pb-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-2xs font-semibold">
-                          {project.platform} ({project.ratio})
+          <>
+            {isLoading ? (
+              <div className="flex h-48 items-center justify-center rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  <span>Loading production pipelines from database...</span>
+                </div>
+              </div>
+            ) : projects.length === 0 ? (
+              <EmptyState
+                icon={<Film className="h-8 w-8" />}
+                title="No Active Video Projects"
+                description="You haven't initiated any AI video productions yet. Provide a dialogue, idea, or voice recording to launch Agent Orchestrator."
+                action={{
+                  label: "Create Video with AI",
+                  onClick: () => {
+                    window.location.href = "/studio/create";
+                  },
+                }}
+              />
+            ) : (
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {projects.map((project) => (
+                  <Card key={project.id} className="border-border bg-card shadow-card transition-all hover:border-primary/30">
+                    <CardHeader className="p-5 pb-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-2xs font-semibold">
+                              {project.platform} ({project.ratio})
+                            </Badge>
+                            <span className="text-2xs text-muted-foreground font-mono">
+                              {project.duration} &bull; {project.scenes} scenes
+                            </span>
+                          </div>
+                          <h3 className="truncate text-sm font-bold text-foreground">
+                            {project.title}
+                          </h3>
+                        </div>
+                        <Badge
+                          variant={
+                            project.stageBadge === "success"
+                              ? "success"
+                              : project.stageBadge === "warning"
+                              ? "warning"
+                              : "secondary"
+                          }
+                          className="shrink-0 text-2xs"
+                        >
+                          {project.stage}
                         </Badge>
-                        <span className="text-2xs text-muted-foreground font-mono">
-                          {project.duration} &bull; {project.scenes} scenes
-                        </span>
                       </div>
-                      <h3 className="truncate text-sm font-bold text-foreground">
-                        {project.title}
-                      </h3>
-                    </div>
-                    <Badge
-                      variant={
-                        project.stageBadge === "success"
-                          ? "success"
-                          : project.stageBadge === "warning"
-                          ? "warning"
-                          : "secondary"
-                      }
-                      className="shrink-0 text-2xs"
-                    >
-                      {project.stage}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-5 pt-0">
-                  <div className="mt-2 space-y-1.5">
-                    <div className="flex items-center justify-between text-2xs text-muted-foreground">
-                      <span>Pipeline Progress</span>
-                      <span className="font-semibold text-foreground">{project.progress}%</span>
-                    </div>
-                    <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full bg-primary transition-all duration-300"
-                        style={{ width: `${project.progress}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between pt-3 border-t border-border/80">
-                    <span className="text-2xs text-muted-foreground">Updated {project.updated}</span>
-                    <div className="flex items-center gap-2">
-                      <Link href={`/studio/workspace/${project.id}`}>
-                        <Button variant="outline" size="sm" className="h-7 text-xs">
-                          Open Studio
-                        </Button>
-                      </Link>
-                      {project.progress === 100 ? (
-                        <Link href="/studio/publishing-queue">
-                          <Button variant="default" size="sm" className="h-7 text-xs gap-1">
-                            <Send className="h-3 w-3" />
-                            <span>Publish</span>
-                          </Button>
-                        </Link>
-                      ) : (
-                        <Link href={`/studio/workspace/${project.id}`}>
-                          <Button variant="brand" size="sm" className="h-7 text-xs gap-1">
-                            <Play className="h-3 w-3" />
-                            <span>Inspect</span>
-                          </Button>
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    </CardHeader>
+                    <CardContent className="p-5 pt-0">
+                      <div className="mt-2 space-y-1.5">
+                        <div className="flex items-center justify-between text-2xs text-muted-foreground">
+                          <span>Pipeline Progress</span>
+                          <span className="font-semibold text-foreground">{project.progress}%</span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full bg-primary transition-all duration-300"
+                            style={{ width: `${project.progress}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-4 flex items-center justify-between pt-3 border-t border-border/80">
+                        <span className="text-2xs text-muted-foreground">Updated {project.updated}</span>
+                        <div className="flex items-center gap-2">
+                          <Link href={`/studio/workspace/${project.id}`}>
+                            <Button variant="outline" size="sm" className="h-7 text-xs">
+                              Open Studio
+                            </Button>
+                          </Link>
+                          {project.progress === 100 ? (
+                            <Link href="/studio/publishing-queue">
+                              <Button variant="default" size="sm" className="h-7 text-xs gap-1">
+                                <Send className="h-3 w-3" />
+                                <span>Publish</span>
+                              </Button>
+                            </Link>
+                          ) : (
+                            <Link href={`/studio/workspace/${project.id}`}>
+                              <Button variant="brand" size="sm" className="h-7 text-xs gap-1">
+                                <Play className="h-3 w-3" />
+                                <span>Inspect</span>
+                              </Button>
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </>
         )}
 
         {selectedTab === "agents" && (

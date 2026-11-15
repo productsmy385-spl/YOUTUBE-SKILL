@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AdvancedTable } from "@/components/ui/advanced-table";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Download,
   Film,
@@ -23,7 +24,7 @@ import {
   Subtitles,
   Upload,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface MediaItem extends Record<string, unknown> {
   id: string;
@@ -33,65 +34,101 @@ interface MediaItem extends Record<string, unknown> {
   duration: string;
   format: string;
   createdAt: string;
+  url?: string;
 }
 
 export function MediaLibraryView() {
-  const [mediaList, setMediaList] = useState<MediaItem[]>([
-    {
-      id: "MED-001",
-      name: "scene_01_veo_master.mp4",
-      type: "Video",
-      size: "18.4 MB",
-      duration: "9.5s",
-      format: "MP4 (1080x1920)",
-      createdAt: "Today, 4:15 PM",
-    },
-    {
-      id: "MED-002",
-      name: "scene_02_veo_master.mp4",
-      type: "Video",
-      size: "21.2 MB",
-      duration: "11.0s",
-      format: "MP4 (1080x1920)",
-      createdAt: "Today, 4:18 PM",
-    },
-    {
-      id: "MED-003",
-      name: "scene_01_voice_te.wav",
-      type: "Audio (Voice)",
-      size: "3.2 MB",
-      duration: "4.2s",
-      format: "WAV (48kHz)",
-      createdAt: "Today, 4:20 PM",
-    },
-    {
-      id: "MED-004",
-      name: "telugu_comedy_quirk_loop.mp3",
-      type: "Music (BGM)",
-      size: "6.8 MB",
-      duration: "3m 00s",
-      format: "MP3 (320kbps)",
-      createdAt: "Today, 4:22 PM",
-    },
-    {
-      id: "MED-005",
-      name: "thumb_shock_expression.webp",
-      type: "Thumbnail",
-      size: "420 KB",
-      duration: "-",
-      format: "WebP (1080x1920)",
-      createdAt: "Today, 4:25 PM",
-    },
-    {
-      id: "MED-006",
-      name: "subtitles_te_IN.vtt",
-      type: "Subtitle",
-      size: "12 KB",
-      duration: "45s",
-      format: "VTT (Unicode te-IN)",
-      createdAt: "Today, 4:26 PM",
-    },
-  ]);
+  const [mediaList, setMediaList] = useState<MediaItem[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    async function loadMedia() {
+      try {
+        const res = await fetch("/api/media");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.media && Array.isArray(data.media)) {
+            const mapped = data.media.map((m: any) => ({
+              id: m.id,
+              name: m.fileName || "media_asset",
+              type: m.assetType === "video"
+                ? "Video"
+                : m.assetType?.includes("voice")
+                ? "Audio (Voice)"
+                : m.assetType?.includes("music")
+                ? "Music (BGM)"
+                : m.assetType === "thumbnail"
+                ? "Thumbnail"
+                : "Video",
+              size: m.fileSizeBytes ? `${(m.fileSizeBytes / (1024 * 1024)).toFixed(1)} MB` : "—",
+              duration: m.durationSeconds ? `${m.durationSeconds}s` : "—",
+              format: m.mimeType || "application/octet-stream",
+              createdAt: m.createdAt ? new Date(m.createdAt).toLocaleDateString() : "Recently",
+              url: m.previewUrl,
+            }));
+            setMediaList(mapped);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load media:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadMedia();
+  }, []);
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("role", file.type.startsWith("video/") ? "raw_cut_video" : "reference_image");
+      formData.append("label", file.name);
+
+      const res = await fetch("/api/media/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const asset = data.asset;
+        const newMediaItem: MediaItem = {
+          id: asset.id,
+          name: asset.fileName,
+          type: asset.assetType === "video" ? "Video" : "Thumbnail",
+          size: asset.sizeFormatted,
+          duration: asset.duration || "—",
+          format: file.type,
+          createdAt: "Just now",
+          url: asset.previewUrl,
+        };
+        setMediaList((prev) => [newMediaItem, ...prev]);
+      }
+    } catch (err) {
+      console.error("Upload failed:", err);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const videoCount = mediaList.filter((m) => m.type === "Video").length;
+  const voiceCount = mediaList.filter((m) => m.type === "Audio (Voice)").length;
+  const musicCount = mediaList.filter((m) => m.type === "Music (BGM)").length;
+  const otherCount = mediaList.filter((m) => m.type === "Thumbnail" || m.type === "Subtitle").length;
 
   const columns = [
     {
@@ -154,7 +191,7 @@ export function MediaLibraryView() {
       key: "actions",
       header: "Actions",
       cell: () => (
-        <Button variant="outline" size="icon-sm" title="Download">
+        <Button variant="outline" size="icon-sm" title="Download Asset">
           <Download className="h-3.5 w-3.5" />
         </Button>
       ),
@@ -163,14 +200,28 @@ export function MediaLibraryView() {
 
   return (
     <div className="space-y-6">
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        onChange={handleFileChange}
+        accept="video/*,image/*,audio/*"
+      />
+
       <PageHeader
         title="Media Library"
         description="Private object-storage management for video clips, voice stems, licensed background scores, and thumbnail assets. Files are served securely via pre-signed S3 URLs."
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5">
+            <Button
+              variant="brand"
+              size="sm"
+              className="gap-1.5"
+              onClick={handleUploadClick}
+              disabled={isUploading}
+            >
               <Upload className="h-4 w-4" />
-              <span>Upload Asset</span>
+              <span>{isUploading ? "Uploading File..." : "Upload Asset"}</span>
             </Button>
           </div>
         }
@@ -179,26 +230,26 @@ export function MediaLibraryView() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <Card className="border-border bg-card p-4 shadow-card">
           <span className="text-2xs font-bold uppercase text-muted-foreground">Video Clips</span>
-          <p className="text-2xl font-bold text-foreground mt-2 font-mono">14</p>
-          <p className="text-2xs text-muted-foreground mt-0.5">1080x1920 &bull; 2.4 GB Total</p>
+          <p className="text-2xl font-bold text-foreground mt-2 font-mono">{videoCount}</p>
+          <p className="text-2xs text-muted-foreground mt-0.5">Raw footage &amp; rendered clips</p>
         </Card>
 
         <Card className="border-border bg-card p-4 shadow-card">
           <span className="text-2xs font-bold uppercase text-muted-foreground">Telugu Voice Stems</span>
-          <p className="text-2xl font-bold text-foreground mt-2 font-mono">32</p>
-          <p className="text-2xs text-muted-foreground mt-0.5">48kHz WAV &bull; 142 MB Total</p>
+          <p className="text-2xl font-bold text-foreground mt-2 font-mono">{voiceCount}</p>
+          <p className="text-2xs text-muted-foreground mt-0.5">Synthesized te-IN dialogue audio</p>
         </Card>
 
         <Card className="border-border bg-card p-4 shadow-card">
           <span className="text-2xs font-bold uppercase text-muted-foreground">Music &amp; SFX</span>
-          <p className="text-2xl font-bold text-foreground mt-2 font-mono">18</p>
-          <p className="text-2xs text-muted-foreground mt-0.5">Licensed &bull; 85 MB Total</p>
+          <p className="text-2xl font-bold text-foreground mt-2 font-mono">{musicCount}</p>
+          <p className="text-2xs text-muted-foreground mt-0.5">Licensed background audio</p>
         </Card>
 
         <Card className="border-border bg-card p-4 shadow-card">
           <span className="text-2xs font-bold uppercase text-muted-foreground">Thumbnails &amp; Subs</span>
-          <p className="text-2xl font-bold text-foreground mt-2 font-mono">24</p>
-          <p className="text-2xs text-muted-foreground mt-0.5">WebP &amp; VTT &bull; 12 MB Total</p>
+          <p className="text-2xl font-bold text-foreground mt-2 font-mono">{otherCount}</p>
+          <p className="text-2xs text-muted-foreground mt-0.5">WebP graphics &amp; VTT captions</p>
         </Card>
       </div>
 
@@ -210,10 +261,30 @@ export function MediaLibraryView() {
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <AdvancedTable<MediaItem> columns={columns} data={mediaList} />
+          {isLoading ? (
+            <div className="flex h-48 items-center justify-center p-6 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <span>Loading media assets...</span>
+              </div>
+            </div>
+          ) : mediaList.length === 0 ? (
+            <div className="p-6">
+              <EmptyState
+                icon={<Film className="h-8 w-8" />}
+                title="Media Library is Empty"
+                description="Upload raw video cuts, B-roll footage, and reference images to store them securely and use them across your AI productions."
+                action={{
+                  label: "Upload Your First File",
+                  onClick: handleUploadClick,
+                }}
+              />
+            </div>
+          ) : (
+            <AdvancedTable<MediaItem> columns={columns} data={mediaList} />
+          )}
         </CardContent>
       </Card>
     </div>
   );
 }
-

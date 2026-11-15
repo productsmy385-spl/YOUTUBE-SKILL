@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   CheckCircle2,
   Headphones,
@@ -57,12 +58,12 @@ export function VoiceStudioView() {
   const [selectedDialect, setSelectedDialect] = useState<string>("godavari");
 
   // TTS Playground State
-  const [ttsText, setTtsText] = useState<string>("గోదావరి గట్టున కూర్చుని చూస్తే పల్లెటూరి అందాలు ఎంత ముచ్చటగా ఉంటాయో!");
+  const [ttsText, setTtsText] = useState<string>("");
   const [ttsVoice, setTtsVoice] = useState<string>("ravi_youth");
   const [ttsEmotion, setTtsEmotion] = useState<string>("emotional_nostalgic");
   const [ttsSpeed, setTtsSpeed] = useState<number>(1.0);
   const [isSynthesizing, setIsSynthesizing] = useState<boolean>(false);
-  const [playgroundAudioReady, setPlaygroundAudioReady] = useState<boolean>(true);
+  const [playgroundAudioReady, setPlaygroundAudioReady] = useState<boolean>(false);
   const [isPlayingPlayground, setIsPlayingPlayground] = useState<boolean>(false);
 
   // Pronunciation rules state
@@ -76,44 +77,7 @@ export function VoiceStudioView() {
   const [newWord, setNewWord] = useState("");
   const [newPhonetic, setNewPhonetic] = useState("");
 
-  const [voiceLines, setVoiceLines] = useState<VoiceLine[]>([
-    {
-      id: 1,
-      speaker: "రవి (Ravi - Male Youth)",
-      telugu: "రవి: అరె సురేష్! బాస్ ఇంకా రాలేదా? అబ్బా దేవుడా బ్రతికించావు!",
-      emotion: "ఆందోళన & ఆత్రుత (Anxious Rush)",
-      duration: "4.2s",
-      speed: 1.05,
-      lufs: "-14.0 LUFS",
-    },
-    {
-      id: 2,
-      speaker: "సురేష్ (Suresh - Male Sarcastic)",
-      telugu: "సురేష్: వెనక్కి తిరిగి చూడు రా బాబు... బాస్ నీ వెనకాలే నిలబడి 10 నిమిషాల నుంచి వింటున్నారు!",
-      emotion: "వ్యంగ్యం & గుసగుస (Sarcastic Whisper)",
-      duration: "5.1s",
-      speed: 0.98,
-      lufs: "-14.2 LUFS",
-    },
-    {
-      id: 3,
-      speaker: "రవి (Ravi - Male Shock)",
-      telugu: "రవి: (షాక్ అయ్యి నవ్వుతూ) నమస్తే సార్! మీరు ఎప్పుడు వచ్చారు? ట్రాఫిక్ బాగుందా?",
-      emotion: "షాక్ నుండి నవ్వు (Shock to Awkward Respect)",
-      duration: "5.8s",
-      speed: 1.0,
-      lufs: "-13.8 LUFS",
-    },
-    {
-      id: 4,
-      speaker: "రామారావు (Manager - Deep Bass)",
-      telugu: "బాస్: ట్రాఫిక్ బాగుంది రవి... రేపటినుంచి నీకు రోజూ లీవ్ కావాలా?",
-      emotion: "గంభీరమైన వ్యంగ్యం (Deadpan Sarcasm)",
-      duration: "4.6s",
-      speed: 0.92,
-      lufs: "-14.0 LUFS",
-    },
-  ]);
+  const [voiceLines, setVoiceLines] = useState<VoiceLine[]>([]);
 
   const togglePlay = (id: number) => {
     setPlayingId(playingId === id ? null : id);
@@ -293,10 +257,22 @@ export function VoiceStudioView() {
               </Badge>
             </CardHeader>
             <CardContent className="space-y-4">
-              {voiceLines.map((line) => (
-                <div key={line.id} className="rounded-xl border border-border p-4 bg-muted/20 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+              {voiceLines.length === 0 ? (
+                <EmptyState
+                  icon={<Mic className="h-8 w-8" />}
+                  title="No Voice Stems Synthesized Yet"
+                  description="Synthesize dialogue tracks for your scenes using Agent 07 Telugu TTS or record scratch audio in the creator wizard."
+                  action={{
+                    label: "Launch Video Wizard",
+                    onClick: () => {
+                      window.location.href = "/studio/create";
+                    },
+                  }}
+                />
+              ) : (
+                voiceLines.map((line) => (
+                  <div key={line.id} className="rounded-xl border border-border p-4 bg-muted/20 space-y-3">
+                    <div className="flex items-center justify-between">
                       <span className="font-mono text-2xs font-bold text-primary">STEM 0{line.id}</span>
                       <span className="text-xs font-bold text-foreground">{line.speaker}</span>
                     </div>
@@ -304,46 +280,46 @@ export function VoiceStudioView() {
                       <Badge variant="outline" className="text-2xs font-mono">{line.lufs}</Badge>
                       <span className="font-mono text-2xs text-muted-foreground">{line.duration}</span>
                     </div>
-                  </div>
 
-                  <p className="text-sm font-semibold text-foreground font-sans leading-relaxed">
-                    {line.telugu}
-                  </p>
+                    <p className="text-sm font-semibold text-foreground font-sans leading-relaxed">
+                      {line.telugu}
+                    </p>
 
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-border/60">
-                    <div className="flex items-center gap-3 text-2xs text-muted-foreground">
-                      <span>Emotion: <strong className="text-foreground">{line.emotion}</strong></span>
-                      <span>&bull;</span>
-                      <span>Speed: <strong className="font-mono text-foreground">{line.speed}x</strong></span>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-border/60">
+                      <div className="flex items-center gap-3 text-2xs text-muted-foreground">
+                        <span>Emotion: <strong className="text-foreground">{line.emotion}</strong></span>
+                        <span>&bull;</span>
+                        <span>Speed: <strong className="font-mono text-foreground">{line.speed}x</strong></span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant={playingId === line.id ? "destructive" : "default"}
+                          size="sm"
+                          className="h-8 gap-1.5 text-xs font-semibold"
+                          onClick={() => togglePlay(line.id)}
+                        >
+                          {playingId === line.id ? (
+                            <>
+                              <Pause className="h-3.5 w-3.5" />
+                              <span>Playing Stem...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play className="h-3.5 w-3.5" />
+                              <span>Preview Stem ({line.duration})</span>
+                            </>
+                          )}
+                        </Button>
+                        <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
+                          <RefreshCw className="h-3 w-3" />
+                          <span>Re-synthesize</span>
+                        </Button>
+                      </div>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant={playingId === line.id ? "destructive" : "default"}
-                        size="sm"
-                        className="h-8 gap-1.5 text-xs font-semibold"
-                        onClick={() => togglePlay(line.id)}
-                      >
-                        {playingId === line.id ? (
-                          <>
-                            <Pause className="h-3.5 w-3.5" />
-                            <span>Playing Stem...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Play className="h-3.5 w-3.5" />
-                            <span>Preview Stem ({line.duration})</span>
-                          </>
-                        )}
-                      </Button>
-                      <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
-                        <RefreshCw className="h-3 w-3" />
-                        <span>Re-synthesize</span>
-                      </Button>
-                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </CardContent>
           </Card>
         </TabsContent>

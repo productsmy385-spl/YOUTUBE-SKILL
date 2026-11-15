@@ -73,54 +73,7 @@ export class CalendarService {
    * Generates calendar events for a given month with recommended slots
    */
   public getEventsForMonth(year: number, month: number): ScheduledCalendarEvent[] {
-    const monthStr = month < 10 ? `0${month}` : `${month}`;
-
-    return [
-      {
-        id: "ev_01",
-        projectId: "proj_snkr_01",
-        title: "Sankranti Memories in Godavari",
-        teluguTitle: "సంక్రాంతి జ్ఞాపకాలు - పల్లెటూరి పండుగ కథ",
-        platform: "YouTube Shorts",
-        scheduledDate: `${year}-${monthStr}-14`,
-        slot: RECOMMENDED_IST_SLOTS[2], // Prime Evening
-        status: "Published",
-        thumbnailUrl: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&q=80",
-      },
-      {
-        id: "ev_02",
-        projectId: "proj_snkr_02",
-        title: "Sankranti Memories | Reels Cut",
-        teluguTitle: "సంక్రాంతి జ్ఞాపకాలు - రీల్స్ కట్",
-        platform: "Instagram Reel",
-        scheduledDate: `${year}-${monthStr}-14`,
-        slot: RECOMMENDED_IST_SLOTS[3], // Prime Time Reels
-        status: "Published",
-        thumbnailUrl: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&q=80",
-      },
-      {
-        id: "ev_03",
-        projectId: "proj_rtu_01",
-        title: "Farmer's Tears & Hope",
-        teluguTitle: "రైతు కన్నీరు & ఆశ - హృదయపూర్వక దృశ్యం",
-        platform: "YouTube Shorts",
-        scheduledDate: `${year}-${monthStr}-18`,
-        slot: RECOMMENDED_IST_SLOTS[0], // Morning Commute
-        status: "Queued",
-        thumbnailUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&q=80",
-      },
-      {
-        id: "ev_04",
-        projectId: "proj_mlt_01",
-        title: "Midnight Mystery of Cyberabad Ep 1",
-        teluguTitle: "సైబరాబాద్ అర్ధరాత్రి రహస్యం - ఎపిసోడ్ 1",
-        platform: "YouTube Long",
-        scheduledDate: `${year}-${monthStr}-22`,
-        slot: RECOMMENDED_IST_SLOTS[4], // Weekend Cinema
-        status: "Draft",
-        thumbnailUrl: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=400&q=80",
-      },
-    ];
+    return [];
   }
 
   /**

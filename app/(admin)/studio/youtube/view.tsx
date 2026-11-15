@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Tv,
   UploadCloud,
@@ -80,155 +81,31 @@ interface CommentItem {
   replySent?: boolean;
 }
 
-const mockPublishedVideos: PublishedVideo[] = [
-  {
-    id: "yt_snkr_01",
-    title: "Sankranti Memories in Godavari | Emotional Telugu Story",
-    teluguTitle: "సంక్రాంతి జ్ఞాపకాలు - పల్లెటూరి పండుగ కథ",
-    type: "Shorts",
-    publishedAt: "2025-01-14 18:30 IST",
-    views: "184.2K",
-    likes: "14.8K",
-    comments: "842",
-    ctr: "11.4%",
-    status: "Public",
-    thumbnailUrl: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&q=80",
-  },
-  {
-    id: "yt_mlt_02",
-    title: "Midnight Mystery of Cyberabad | Telugu Thriller Episode 1",
-    teluguTitle: "సైబరాబాద్ అర్ధరాత్రి రహస్యం - ఎపిసోడ్ 1",
-    type: "Long-form",
-    publishedAt: "2025-01-10 20:00 IST",
-    views: "92.6K",
-    likes: "8.1K",
-    comments: "512",
-    ctr: "8.9%",
-    status: "Public",
-    thumbnailUrl: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80",
-  },
-  {
-    id: "yt_rtu_03",
-    title: "Farmer's Tears & Hope | Realistic Telugu Drama",
-    teluguTitle: "రైతు కన్నీరు & ఆశ - హృదయపూర్వక దృశ్యం",
-    type: "Shorts",
-    publishedAt: "2025-01-16 19:00 IST",
-    views: "—",
-    likes: "—",
-    comments: "—",
-    ctr: "—",
-    status: "Scheduled",
-    thumbnailUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&q=80",
-  },
-];
-
 export function YouTubeStudioView() {
+  const [publishedVideos, setPublishedVideos] = React.useState<PublishedVideo[]>([]);
   const [selectedFormat, setSelectedFormat] = React.useState<"Shorts" | "Long-form">("Shorts");
-  const [videoTitle, setVideoTitle] = React.useState("సంక్రాంతి జ్ఞాపకాలు - పల్లెటూరి పండుగ ముచ్చట్లు | Telugu AI Cinema");
-  const [videoDescription, setVideoDescription] = React.useState(
-    "గోదావరి ఒడ్డున గడిచిన సంక్రాంతి మధుర క్షణాలు. AI సాంకేతికతతో సృష్టించబడిన తెలుగు దృశ్య కావ్యం.\n\n" +
-      "⏱️ Chapters:\n" +
-      "0:00 - ఉదయం ముగ్గులు & పల్లె శోభ\n" +
-      "0:18 - గాలిపటాల సందడి & గంగిరెద్దులు\n" +
-      "0:42 - అమ్మ చేసిన పిండివంటలు\n" +
-      "0:55 - వీడ్కోలు & ఆత్మీయతలు\n\n" +
-      "#TeluguStories #Sankranti #TeluguCinema #AIStorytelling #TollywoodShorts"
-  );
-  const [tags, setTags] = React.useState("Telugu Stories, Sankranti 2025, AI Telugu Video, Godavari Life, Telugu Emotional Story, Tollywood Shorts");
+  const [videoTitle, setVideoTitle] = React.useState("");
+  const [videoDescription, setVideoDescription] = React.useState("");
+  const [tags, setTags] = React.useState("");
   const [privacy, setPrivacy] = React.useState("public");
-  const [scheduledDate, setScheduledDate] = React.useState("2025-01-20T18:00");
+  const [scheduledDate, setScheduledDate] = React.useState("");
   const [isUploading, setIsUploading] = React.useState(false);
   const [uploadProgress, setUploadProgress] = React.useState(0);
   const [uploadSuccess, setUploadSuccess] = React.useState(false);
-  const [quotaRemaining, setQuotaRemaining] = React.useState(6800);
+  const [quotaRemaining, setQuotaRemaining] = React.useState(10000);
 
   // A/B Variant State
-  const [variantTopic, setVariantTopic] = React.useState("సంక్రాంతి పల్లెటూరి జ్ఞాపకాలు");
+  const [variantTopic, setVariantTopic] = React.useState("");
   const [isLoadingVariants, setIsLoadingVariants] = React.useState(false);
-  const [variants, setVariants] = React.useState<TitleVariant[]>([
-    {
-      style: "Curiosity Hook",
-      teluguTitle: "గోదావరి పల్లెల్లో సంక్రాంతి నాడు అసలు ఏం జరుగుతుందో తెలుసా? 🌾",
-      englishTitle: "What Really Happens During Sankranti in Godavari Villages?",
-      hookLine: "ఈ ఒక్క రోజు కోసమే ఊరంతా ఏడాది పొడవునా ఎదురుచూస్తుంది...",
-      projectedCtr: "12.8%",
-      clickScore: 94,
-      explanation: "Creates high intrigue by withholding the central emotional secret in the first 3 seconds.",
-    },
-    {
-      style: "Emotional Appeal",
-      teluguTitle: "అమ్మ చేతి పిండివంటలు... కన్నీళ్లు తెప్పించే సంక్రాంతి జ్ఞాపకం 🥺",
-      englishTitle: "Mother's Festive Cooking... A Heartwarming Village Memory",
-      hookLine: "ఎంత సంపాదించినా, పల్లెటూరి పిండివంటల వాసన ముందు ఏదీ సరిపోదు...",
-      projectedCtr: "11.2%",
-      clickScore: 89,
-      explanation: "Targets Telugu family sentiment and deep nostalgic yearning for mother's cooking.",
-    },
-    {
-      style: "Mass Drama",
-      teluguTitle: "సంక్రాంతి పందెం బరిలో దిగిన ఊరి పెద్ద! రొమాలు నిక్కబొడిచే సీన్! 💥",
-      englishTitle: "Village Elder Enters the Festive Arena! Intense Climax Scene",
-      hookLine: "ఈ పందెంలో గెలిచేది కోడి కాదు... మన ఊరి పౌరుషం!",
-      projectedCtr: "13.6%",
-      clickScore: 97,
-      explanation: "High energy, competitive mass appeal that drives instant Shorts engagement.",
-    },
-    {
-      style: "Search SEO",
-      teluguTitle: "సంక్రాంతి పండుగ విశిష్టత & గోదావరి సాంప్రదాయాలు | Telugu Stories",
-      englishTitle: "Sankranti Festival Traditions & Godavari Culture Telugu Story",
-      hookLine: "మన తెలుగు సంస్కృతి గొప్పదనం చాటే నిజమైన పండుగ కథ.",
-      projectedCtr: "8.9%",
-      clickScore: 82,
-      explanation: "Engineered for high organic search query volume on YouTube Search & Google Video.",
-    },
-  ]);
+  const [variants, setVariants] = React.useState<TitleVariant[]>([]);
 
   // Keyword Explorer State
-  const [searchKeyword, setSearchKeyword] = React.useState("సంక్రాంతి");
+  const [searchKeyword, setSearchKeyword] = React.useState("");
   const [isSearchingKeywords, setIsSearchingKeywords] = React.useState(false);
-  const [discoveredKeywords, setDiscoveredKeywords] = React.useState<KeywordItem[]>([
-    { tag: "Sankranti Telugu Stories", searchVolume: "120K/mo", competition: "Low", isTrending: true },
-    { tag: "గోదావరి సంక్రాంతి సంబరాలు", searchVolume: "85K/mo", competition: "Low", isTrending: true },
-    { tag: "Telugu AI Animated Shorts", searchVolume: "65K/mo", competition: "Medium", isTrending: true },
-    { tag: "పల్లెటూరి పండుగ ముచ్చట్లు", searchVolume: "42K/mo", competition: "Low", isTrending: false },
-    { tag: "Tollywood Emotional Scenes", searchVolume: "210K/mo", competition: "High", isTrending: false },
-    { tag: "గంగిరెద్దుల పాటలు తెలుగు", searchVolume: "38K/mo", competition: "Low", isTrending: true },
-  ]);
+  const [discoveredKeywords, setDiscoveredKeywords] = React.useState<KeywordItem[]>([]);
 
   // Community Comments State
-  const [comments, setComments] = React.useState<CommentItem[]>([
-    {
-      id: "c_01",
-      author: "శ్రీనివాసరావు (Srinivasa Rao)",
-      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80",
-      text: "అద్భుతమైన విజువల్స్ బ్రదర్! గోదావరి మాండలికం వింటుంటే చిన్ననాటి జ్ఞాపకాలు గుర్తొచ్చాయి. నెక్స్ట్ పార్ట్ ఎప్పుడు వస్తుంది?",
-      sentiment: "positive",
-      timestamp: "12 mins ago",
-      likes: 24,
-      aiSuggestedReply: "చాలా సంతోషం అన్నా! మీ అమూల్యమైన ప్రేమకు ధన్యవాదాలు. రెండో భాగం వచ్చే బుధవారం సాయంత్రం 6 గంటలకి రిలీజ్ చేస్తున్నాం!",
-    },
-    {
-      id: "c_02",
-      author: "Sai Teja",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80",
-      text: "Background music emotion ki perfect ga suit aindi. ఏ AI టూల్స్ తో క్రియేట్ చేశారు?",
-      sentiment: "question",
-      timestamp: "35 mins ago",
-      likes: 8,
-      aiSuggestedReply: "హలో సాయి తేజ! ఇది మా సిర్స్ AI ఏజెంటిక్ స్టూడియో ద్వారా Gemini Veo, న్యూరల్ తెలుగు వాయిస్ మరియు FFmpeg తో నిర్మించాం!",
-    },
-    {
-      id: "c_03",
-      author: "Venkatesh K.",
-      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&q=80",
-      text: "రైతు పాత్ర ముఖంలో కన్నీళ్లు ఇంకొంచెం నేచురల్ గా ఉండాల్సింది. బట్ ఓవరాల్ స్టోరీ ఎక్సలెంట్!",
-      sentiment: "critical",
-      timestamp: "1 hour ago",
-      likes: 15,
-      aiSuggestedReply: "మీ నిజాయితీ గల అభిప్రాయానికి ధన్యవాదాలు వెంకటేష్ గారు. తదుపరి ఎపిసోడ్ లో మా క్యారెక్టర్ & ఫేసియల్ రిగ్గింగ్ ని మరింత మెరుగుపరుస్తాం!",
-    },
-  ]);
+  const [comments, setComments] = React.useState<CommentItem[]>([]);
   const [activeReplyId, setActiveReplyId] = React.useState<string | null>(null);
   const [replyDraft, setReplyDraft] = React.useState<string>("");
 
@@ -697,65 +574,75 @@ export function YouTubeStudioView() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {variants.map((v, idx) => (
-                  <div
-                    key={idx}
-                    className="rounded-xl border border-border p-4 bg-muted/20 hover:bg-muted/30 transition-all space-y-3 relative group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <Badge
-                        variant={
-                          v.style === "Mass Drama"
-                            ? "destructive"
-                            : v.style === "Emotional Appeal"
-                            ? "brand"
-                            : v.style === "Curiosity Hook"
-                            ? "warning"
-                            : "outline"
-                        }
-                        className="text-2xs font-semibold"
-                      >
-                        {v.style}
-                      </Badge>
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xs text-muted-foreground">Proj. CTR:</span>
-                        <span className="font-bold text-xs text-emerald-500">{v.projectedCtr}</span>
-                        <Badge variant="outline" className="text-2xs font-mono">
-                          Score: {v.clickScore}/100
+              {variants.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-border rounded-xl">
+                  <Sparkles className="w-8 h-8 text-amber-500/60 mb-2" />
+                  <h4 className="text-sm font-semibold text-foreground">No A/B Variants Generated Yet</h4>
+                  <p className="text-2xs text-muted-foreground max-w-sm mt-1">
+                    Enter a video concept or dialogue topic above and click &quot;Generate Variants&quot; to test 4 psychological title and hook variations tailored for Telugu viewers.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {variants.map((v, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-xl border border-border p-4 bg-muted/20 hover:bg-muted/30 transition-all space-y-3 relative group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <Badge
+                          variant={
+                            v.style === "Mass Drama"
+                              ? "destructive"
+                              : v.style === "Emotional Appeal"
+                              ? "brand"
+                              : v.style === "Curiosity Hook"
+                              ? "warning"
+                              : "outline"
+                          }
+                          className="text-2xs font-semibold"
+                        >
+                          {v.style}
                         </Badge>
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xs text-muted-foreground">Proj. CTR:</span>
+                          <span className="font-bold text-xs text-emerald-500">{v.projectedCtr}</span>
+                          <Badge variant="outline" className="text-2xs font-mono">
+                            Score: {v.clickScore}/100
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="font-bold text-sm text-foreground">{v.teluguTitle}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{v.englishTitle}</p>
+                      </div>
+
+                      <div className="p-2.5 rounded-lg bg-card border border-border text-xs space-y-1">
+                        <span className="font-semibold text-2xs text-primary flex items-center gap-1">
+                          <Play className="w-3 h-3" />
+                          First 3-Second Spoken Hook Line:
+                        </span>
+                        <p className="italic text-muted-foreground font-sans">&quot;{v.hookLine}&quot;</p>
+                      </div>
+
+                      <p className="text-2xs text-muted-foreground leading-relaxed">{v.explanation}</p>
+
+                      <div className="pt-2 border-t border-border flex justify-end">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => applyVariantToTitle(v)}
+                          className="gap-1.5 text-xs h-7 group-hover:border-primary group-hover:text-primary transition-colors"
+                        >
+                          <Check className="w-3 h-3" />
+                          Apply to Video Title
+                        </Button>
                       </div>
                     </div>
-
-                    <div>
-                      <p className="font-bold text-sm text-foreground">{v.teluguTitle}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{v.englishTitle}</p>
-                    </div>
-
-                    <div className="p-2.5 rounded-lg bg-card border border-border text-xs space-y-1">
-                      <span className="font-semibold text-2xs text-primary flex items-center gap-1">
-                        <Play className="w-3 h-3" />
-                        First 3-Second Spoken Hook Line:
-                      </span>
-                      <p className="italic text-muted-foreground font-sans">&quot;{v.hookLine}&quot;</p>
-                    </div>
-
-                    <p className="text-2xs text-muted-foreground leading-relaxed">{v.explanation}</p>
-
-                    <div className="pt-2 border-t border-border flex justify-end">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => applyVariantToTitle(v)}
-                        className="gap-1.5 text-xs h-7 group-hover:border-primary group-hover:text-primary transition-colors"
-                      >
-                        <Check className="w-3 h-3" />
-                        Apply to Video Title
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -802,51 +689,61 @@ export function YouTubeStudioView() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {discoveredKeywords.map((kw, i) => (
-                  <div
-                    key={i}
-                    className="p-3 rounded-xl border border-border bg-muted/20 hover:bg-muted/40 transition-colors flex items-center justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-xs text-foreground">{kw.tag}</span>
-                        {kw.isTrending && (
-                          <Badge variant="brand" className="text-[9px] px-1.5 py-0">
-                            Trending
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1 text-2xs text-muted-foreground">
-                        <span>Vol: {kw.searchVolume}</span>
-                        <span>&bull;</span>
-                        <span>
-                          Comp:{" "}
-                          <strong
-                            className={
-                              kw.competition === "Low"
-                                ? "text-emerald-500"
-                                : kw.competition === "Medium"
-                                ? "text-amber-500"
-                                : "text-red-500"
-                            }
-                          >
-                            {kw.competition}
-                          </strong>
-                        </span>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => addTagToTags(kw.tag)}
-                      className="h-7 w-7 p-0 rounded-full hover:bg-primary/10 hover:text-primary"
+              {discoveredKeywords.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-8 text-center border border-dashed border-border rounded-xl">
+                  <Tag className="w-8 h-8 text-emerald-500/60 mb-2" />
+                  <h4 className="text-sm font-semibold text-foreground">No Keywords Explored Yet</h4>
+                  <p className="text-2xs text-muted-foreground max-w-sm mt-1">
+                    Enter a Telugu topic keyword above and click &quot;Explore&quot; to discover high-volume search queries and competition metrics with Agent 12.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {discoveredKeywords.map((kw, i) => (
+                    <div
+                      key={i}
+                      className="p-3 rounded-xl border border-border bg-muted/20 hover:bg-muted/40 transition-colors flex items-center justify-between"
                     >
-                      <Tag className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-xs text-foreground">{kw.tag}</span>
+                          {kw.isTrending && (
+                            <Badge variant="brand" className="text-[9px] px-1.5 py-0">
+                              Trending
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1 text-2xs text-muted-foreground">
+                          <span>Vol: {kw.searchVolume}</span>
+                          <span>&bull;</span>
+                          <span>
+                            Comp:{" "}
+                            <strong
+                              className={
+                                kw.competition === "Low"
+                                  ? "text-emerald-500"
+                                  : kw.competition === "Medium"
+                                  ? "text-amber-500"
+                                  : "text-red-500"
+                              }
+                            >
+                              {kw.competition}
+                            </strong>
+                          </span>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => addTagToTags(kw.tag)}
+                        className="h-7 w-7 p-0 rounded-full hover:bg-primary/10 hover:text-primary"
+                      >
+                        <Tag className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="mt-6 p-4 rounded-xl bg-card border border-border">
                 <span className="text-xs font-semibold text-foreground block mb-2">Current Video Tags Preview:</span>
@@ -887,93 +784,101 @@ export function YouTubeStudioView() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="rounded-xl border border-border p-4 bg-muted/20 space-y-3 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={comment.avatar}
-                        alt={comment.author}
-                        className="w-8 h-8 rounded-full object-cover border border-border"
-                      />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-foreground">{comment.author}</span>
-                          <span className="text-2xs text-muted-foreground">{comment.timestamp}</span>
+              {comments.length === 0 ? (
+                <EmptyState
+                  icon={<MessageSquare className="h-8 w-8" />}
+                  title="No Community Comments Synchronized Yet"
+                  description="Connect your YouTube channel to fetch viewer comments and generate culturally authentic Telugu replies with Agent 16."
+                />
+              ) : (
+                comments.map((comment) => (
+                  <div
+                    key={comment.id}
+                    className="rounded-xl border border-border p-4 bg-muted/20 space-y-3 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={comment.avatar}
+                          alt={comment.author}
+                          className="w-8 h-8 rounded-full object-cover border border-border"
+                        />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-foreground">{comment.author}</span>
+                            <span className="text-2xs text-muted-foreground">{comment.timestamp}</span>
+                          </div>
+                          <p className="text-xs text-foreground font-sans mt-1 leading-relaxed">{comment.text}</p>
                         </div>
-                        <p className="text-xs text-foreground font-sans mt-1 leading-relaxed">{comment.text}</p>
                       </div>
-                    </div>
-                    <Badge
-                      variant={
-                        comment.sentiment === "positive"
-                          ? "success"
-                          : comment.sentiment === "critical"
-                          ? "warning"
-                          : "outline"
-                      }
-                      className="text-2xs capitalize"
-                    >
-                      {comment.sentiment}
-                    </Badge>
-                  </div>
-
-                  {comment.replySent ? (
-                    <div className="ml-11 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs space-y-1">
-                      <div className="flex items-center gap-1.5 text-2xs text-emerald-400 font-semibold">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Reply Published to YouTube Comment Thread
-                      </div>
-                      <p className="text-foreground font-sans">&quot;{comment.aiSuggestedReply}&quot;</p>
-                    </div>
-                  ) : activeReplyId === comment.id ? (
-                    <div className="ml-11 space-y-2 p-3 rounded-lg bg-card border border-primary/30">
-                      <label className="text-2xs font-semibold text-primary flex items-center gap-1.5">
-                        <Bot className="w-3.5 h-3.5" />
-                        Agent 16 Drafted Telugu Reply (Culturally Tailored):
-                      </label>
-                      <Textarea
-                        rows={2}
-                        value={replyDraft}
-                        onChange={(e) => setReplyDraft(e.target.value)}
-                        className="text-xs font-sans"
-                      />
-                      <div className="flex justify-end gap-2 pt-1">
-                        <Button variant="ghost" size="sm" onClick={() => setActiveReplyId(null)} className="h-7 text-xs">
-                          Cancel
-                        </Button>
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => handleSendReply(comment.id)}
-                          className="h-7 text-xs gap-1.5"
-                        >
-                          <Send className="w-3 h-3" />
-                          Approve & Publish Reply
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="ml-11 flex items-center justify-between pt-1 border-t border-border/50 text-2xs">
-                      <span className="text-muted-foreground flex items-center gap-1">
-                        <ThumbsUp className="w-3 h-3" /> {comment.likes} Likes
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleOpenReply(comment)}
-                        className="h-7 text-xs gap-1.5 text-primary hover:text-primary"
+                      <Badge
+                        variant={
+                          comment.sentiment === "positive"
+                            ? "success"
+                            : comment.sentiment === "critical"
+                            ? "warning"
+                            : "outline"
+                        }
+                        className="text-2xs capitalize"
                       >
-                        <CornerDownRight className="w-3 h-3" />
-                        View AI Telugu Reply Draft
-                      </Button>
+                        {comment.sentiment}
+                      </Badge>
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    {comment.replySent ? (
+                      <div className="ml-11 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs space-y-1">
+                        <div className="flex items-center gap-1.5 text-2xs text-emerald-400 font-semibold">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Reply Published to YouTube Comment Thread
+                        </div>
+                        <p className="text-foreground font-sans">&quot;{comment.aiSuggestedReply}&quot;</p>
+                      </div>
+                    ) : activeReplyId === comment.id ? (
+                      <div className="ml-11 space-y-2 p-3 rounded-lg bg-card border border-primary/30">
+                        <label className="text-2xs font-semibold text-primary flex items-center gap-1.5">
+                          <Bot className="w-3.5 h-3.5" />
+                          Agent 16 Drafted Telugu Reply (Culturally Tailored):
+                        </label>
+                        <Textarea
+                          rows={2}
+                          value={replyDraft}
+                          onChange={(e) => setReplyDraft(e.target.value)}
+                          className="text-xs font-sans"
+                        />
+                        <div className="flex justify-end gap-2 pt-1">
+                          <Button variant="ghost" size="sm" onClick={() => setActiveReplyId(null)} className="h-7 text-xs">
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => handleSendReply(comment.id)}
+                            className="h-7 text-xs gap-1.5"
+                          >
+                            <Send className="w-3 h-3" />
+                            Approve & Publish Reply
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="ml-11 flex items-center justify-between pt-1 border-t border-border/50 text-2xs">
+                        <span className="text-muted-foreground flex items-center gap-1">
+                          <ThumbsUp className="w-3 h-3" /> {comment.likes} Likes
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenReply(comment)}
+                          className="h-7 text-xs gap-1.5 text-primary hover:text-primary"
+                        >
+                          <CornerDownRight className="w-3 h-3" />
+                          View AI Telugu Reply Draft
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -989,64 +894,80 @@ export function YouTubeStudioView() {
           <CardDescription>Live video statistics synchronized from YouTube Analytics API</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs data-table">
-              <thead>
-                <tr className="border-b border-border text-muted-foreground">
-                  <th className="py-3 px-4 font-semibold">Video</th>
-                  <th className="py-3 px-4 font-semibold">Format</th>
-                  <th className="py-3 px-4 font-semibold">Release Date</th>
-                  <th className="py-3 px-4 font-semibold">Status</th>
-                  <th className="py-3 px-4 font-semibold text-right">Views</th>
-                  <th className="py-3 px-4 font-semibold text-right">Likes</th>
-                  <th className="py-3 px-4 font-semibold text-right">CTR</th>
-                  <th className="py-3 px-4 font-semibold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {mockPublishedVideos.map((video) => (
-                  <tr key={video.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={video.thumbnailUrl}
-                          alt={video.title}
-                          className="w-16 h-10 object-cover rounded-md border border-border shrink-0"
-                        />
-                        <div>
-                          <p className="font-semibold text-foreground line-clamp-1">{video.teluguTitle}</p>
-                          <p className="text-2xs text-muted-foreground line-clamp-1">{video.title}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge variant="outline" className="text-2xs">
-                        {video.type}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4 text-muted-foreground text-2xs">{video.publishedAt}</td>
-                    <td className="py-3 px-4">
-                      <Badge
-                        variant={video.status === "Public" ? "brand" : "outline"}
-                        className="text-2xs"
-                      >
-                        {video.status}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4 text-right font-medium text-foreground">{video.views}</td>
-                    <td className="py-3 px-4 text-right text-muted-foreground">{video.likes}</td>
-                    <td className="py-3 px-4 text-right text-emerald-500 font-medium">{video.ctr}</td>
-                    <td className="py-3 px-4 text-right">
-                      <Button variant="ghost" size="sm" className="h-7 text-2xs gap-1">
-                        <ExternalLink className="w-3 h-3" />
-                        Watch
-                      </Button>
-                    </td>
+          {publishedVideos.length === 0 ? (
+            <div className="p-6">
+              <EmptyState
+                icon={<Tv className="h-8 w-8" />}
+                title="No Videos Published Yet"
+                description="Your published videos and telemetry will appear here once videos are uploaded to YouTube via Agent 14."
+                action={{
+                  label: "Create & Publish Video",
+                  onClick: () => {
+                    window.location.href = "/studio/create";
+                  },
+                }}
+              />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs data-table">
+                <thead>
+                  <tr className="border-b border-border text-muted-foreground">
+                    <th className="py-3 px-4 font-semibold">Video</th>
+                    <th className="py-3 px-4 font-semibold">Format</th>
+                    <th className="py-3 px-4 font-semibold">Release Date</th>
+                    <th className="py-3 px-4 font-semibold">Status</th>
+                    <th className="py-3 px-4 font-semibold text-right">Views</th>
+                    <th className="py-3 px-4 font-semibold text-right">Likes</th>
+                    <th className="py-3 px-4 font-semibold text-right">CTR</th>
+                    <th className="py-3 px-4 font-semibold text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {publishedVideos.map((video) => (
+                    <tr key={video.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={video.thumbnailUrl}
+                            alt={video.title}
+                            className="w-16 h-10 object-cover rounded-md border border-border shrink-0"
+                          />
+                          <div>
+                            <p className="font-semibold text-foreground line-clamp-1">{video.teluguTitle}</p>
+                            <p className="text-2xs text-muted-foreground line-clamp-1">{video.title}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge variant="outline" className="text-2xs">
+                          {video.type}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4 text-muted-foreground text-2xs">{video.publishedAt}</td>
+                      <td className="py-3 px-4">
+                        <Badge
+                          variant={video.status === "Public" ? "brand" : "outline"}
+                          className="text-2xs"
+                        >
+                          {video.status}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4 text-right font-medium text-foreground">{video.views}</td>
+                      <td className="py-3 px-4 text-right text-muted-foreground">{video.likes}</td>
+                      <td className="py-3 px-4 text-right text-emerald-500 font-medium">{video.ctr}</td>
+                      <td className="py-3 px-4 text-right">
+                        <Button variant="ghost" size="sm" className="h-7 text-2xs gap-1">
+                          <ExternalLink className="w-3 h-3" />
+                          Watch
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

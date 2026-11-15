@@ -15,17 +15,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import {
-  CheckCircle2,
   Copy,
   Download,
   FileText,
-  Mic,
   Play,
   Plus,
   RefreshCw,
   Sparkles,
   Trash2,
+  CheckCircle2,
 } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
@@ -42,11 +42,14 @@ interface DialogueLine {
 export function ScriptStudioView() {
   const [register, setRegister] = useState<string>("conversational");
   const [lines, setLines] = useState<DialogueLine[]>([]);
+  const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+  const [promptInput, setPromptInput] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const handleAddLine = () => {
     const newLine: DialogueLine = {
       id: Date.now(),
-      speaker: "రవి (Ravi)",
+      speaker: "పాత్ర 1 (Hero)",
       telugu: "",
       english: "",
       cue: "సహజమైన (Natural)",
@@ -59,6 +62,82 @@ export function ScriptStudioView() {
     setLines(lines.filter((l) => l.id !== id));
   };
 
+  const handleGenerateScriptWithAI = async () => {
+    if (!promptInput.trim()) return;
+    setIsGenerating(true);
+    try {
+      const res = await fetch("/api/agents/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentCode: "telugu_script_writer",
+          payload: {
+            title: promptInput.substring(0, 40),
+            rawInput: promptInput,
+            dialectRegister: register,
+          },
+        }),
+      });
+
+      const data = await res.json();
+      if (data.data?.dialogueScenes) {
+        setLines(
+          data.data.dialogueScenes.map((s: { sceneId: number; speaker: string; dialogueTelugu: string; englishMeaning: string; emotionCue: string; pauseAfterSeconds: number }) => ({
+            id: s.sceneId,
+            speaker: s.speaker,
+            telugu: s.dialogueTelugu,
+            english: s.englishMeaning,
+            cue: s.emotionCue,
+            pause: s.pauseAfterSeconds,
+          }))
+        );
+        setIsGenerateModalOpen(false);
+      }
+    } catch (err) {
+      console.error("Failed to generate script:", err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handlePolishDialogue = async () => {
+    if (lines.length === 0) return;
+    setIsGenerating(true);
+    try {
+      const fullText = lines.map((l) => `${l.speaker}: ${l.telugu}`).join("\n");
+      const res = await fetch("/api/agents/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentCode: "telugu_script_writer",
+          payload: {
+            title: "Polished Script",
+            rawInput: fullText,
+            dialectRegister: register,
+          },
+        }),
+      });
+
+      const data = await res.json();
+      if (data.data?.dialogueScenes) {
+        setLines(
+          data.data.dialogueScenes.map((s: { sceneId: number; speaker: string; dialogueTelugu: string; englishMeaning: string; emotionCue: string; pauseAfterSeconds: number }) => ({
+            id: s.sceneId,
+            speaker: s.speaker,
+            telugu: s.dialogueTelugu,
+            english: s.englishMeaning,
+            cue: s.emotionCue,
+            pause: s.pauseAfterSeconds,
+          }))
+        );
+      }
+    } catch (err) {
+      console.error("Failed to polish script:", err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -66,9 +145,14 @@ export function ScriptStudioView() {
         description="Craft natural Telugu dialogues, polish comedic timing, adjust dialect registers, and synchronize line-by-line performance cues with Agent 03."
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <Download className="h-4 w-4" />
-              <span>Export Script</span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setIsGenerateModalOpen(true)}
+            >
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span>Generate with Agent 03</span>
             </Button>
             <Link href="/studio/storyboard">
               <Button variant="brand" size="sm" className="gap-1.5">
@@ -104,8 +188,14 @@ export function ScriptStudioView() {
               </ul>
             </div>
 
-            <Button variant="outline" size="sm" className="w-full gap-1.5">
-              <RefreshCw className="h-3.5 w-3.5" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-1.5"
+              onClick={handlePolishDialogue}
+              disabled={isGenerating || lines.length === 0}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isGenerating ? "animate-spin" : ""}`} />
               <span>AI Polish Dialogue</span>
             </Button>
           </Card>
@@ -122,7 +212,7 @@ export function ScriptStudioView() {
                 </CardDescription>
               </div>
               <Badge variant="brand" className="text-2xs font-semibold">
-                {lines.length} Scenes / 45s
+                {lines.length} Scenes / ~{Math.max(15, lines.length * 10)}s
               </Badge>
             </CardHeader>
 
@@ -131,10 +221,10 @@ export function ScriptStudioView() {
                 <EmptyState
                   icon={<FileText className="h-8 w-8" />}
                   title="No Script Lines Generated Yet"
-                  description="Start by adding dialogue lines manually or create an AI-orchestrated production from a dialogue idea in the studio wizard."
+                  description="Start by adding dialogue lines manually or let Agent 03 write natural Telugu dialogues from your video idea."
                   action={{
-                    label: "Add First Dialogue Line",
-                    onClick: handleAddLine,
+                    label: "Generate Script with Agent 03",
+                    onClick: () => setIsGenerateModalOpen(true),
                   }}
                 />
               ) : (
@@ -236,7 +326,7 @@ export function ScriptStudioView() {
 
             <CardFooter className="flex items-center justify-between border-t border-border pt-4">
               <span className="text-xs text-muted-foreground">
-                Total runtime: <strong>~45 seconds</strong>
+                Total runtime: <strong>~{Math.max(15, lines.length * 10)} seconds</strong>
               </span>
               <Link href="/studio/storyboard">
                 <Button variant="brand" size="sm" className="gap-1.5 font-bold shadow-card">
@@ -248,7 +338,60 @@ export function ScriptStudioView() {
           </Card>
         </div>
       </div>
+
+      {/* Generate Script Modal */}
+      <Dialog open={isGenerateModalOpen} onOpenChange={setIsGenerateModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              Generate Telugu Script with Agent 03
+            </DialogTitle>
+            <DialogDescription>
+              Enter a dialogue snippet, comedic concept, or story summary. Agent 03 will produce a scene-by-scene script with emotion marks.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-xs font-semibold text-foreground block mb-1">
+                Story Idea or Dialogue Concept
+              </label>
+              <Textarea
+                rows={4}
+                value={promptInput}
+                onChange={(e) => setPromptInput(e.target.value)}
+                placeholder="ఉదాహరణ: ఇద్దరు మిత్రులు టీ స్టాల్ దగ్గర సరదాగా మాట్లాడుకోవడం..."
+                className="text-xs"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsGenerateModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="brand"
+              onClick={handleGenerateScriptWithAI}
+              disabled={isGenerating || !promptInput.trim()}
+              className="gap-2"
+            >
+              {isGenerating ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  Generating Telugu Script...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Generate Script
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-

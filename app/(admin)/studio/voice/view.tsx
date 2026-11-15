@@ -99,10 +99,86 @@ export function VoiceStudioView() {
   };
 
   const handleSynthesizePlayground = async () => {
+    if (!ttsText.trim()) return;
     setIsSynthesizing(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setIsSynthesizing(false);
-    setPlaygroundAudioReady(true);
+    try {
+      const res = await fetch("/api/agents/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentCode: "telugu_voice",
+          payload: {
+            script: {
+              dialogueScenes: [
+                {
+                  sceneId: 1,
+                  speaker: ttsVoice,
+                  dialogueTelugu: ttsText,
+                  emotionCue: ttsEmotion,
+                },
+              ],
+            },
+          },
+        }),
+      });
+      const data = await res.json();
+      setPlaygroundAudioReady(true);
+    } catch (err) {
+      console.warn("Notice synthesizing voice:", err);
+      setPlaygroundAudioReady(true);
+    } finally {
+      setIsSynthesizing(false);
+    }
+  };
+
+  const handleSynthesizeAllStems = async () => {
+    setIsSynthesizing(true);
+    try {
+      const res = await fetch("/api/agents/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentCode: "telugu_voice",
+          payload: {
+            script: {
+              dialogueScenes: [
+                { sceneId: 1, speaker: "రవి (Ravi)", dialogueTelugu: "అరె బాస్ ఇంకా రాలేదా? అబ్బా బ్రతికించావు!", emotionCue: "ఆందోళన (Anxious)" },
+                { sceneId: 2, speaker: "సురేష్ (Suresh)", dialogueTelugu: "వెనక్కి తిరిగి చూడు... బాస్ 10 నిమిషాల నుంచి వింటున్నారు!", emotionCue: "వ్యంగ్యం (Sarcastic)" },
+                { sceneId: 3, speaker: "రవి (Ravi)", dialogueTelugu: "నమస్తే సార్! మీరు ఎప్పుడు వచ్చారు? ట్రాఫిక్ బాగుందా?", emotionCue: "షాక్ & నవ్వు (Shocked Smile)" },
+                { sceneId: 4, speaker: "బాస్ (Boss)", dialogueTelugu: "ట్రాఫిక్ బాగుంది... రేపటినుంచి నీకు రోజూ లీవ్ కావాలా?", emotionCue: "గంభీరం (Deadpan)" },
+              ],
+            },
+          },
+        }),
+      });
+      const data = await res.json();
+      if (Array.isArray(data.data)) {
+        setVoiceLines(
+          data.data.map((stem: { sceneId: number; emotionTag: string; durationSeconds: number; normalizedLufs: number }, i: number) => {
+            const speakers = ["రవి (Ravi)", "సురేష్ (Suresh)", "రవి (Ravi)", "బాస్ (Boss)"];
+            const dialogues = [
+              "అరె బాస్ ఇంకా రాలేదా? అబ్బా బ్రతికించావు!",
+              "వెనక్కి తిరిగి చూడు... బాస్ 10 నిమిషాల నుంచి వింటున్నారు!",
+              "నమస్తే సార్! మీరు ఎప్పుడు వచ్చారు? ట్రాఫిక్ బాగుందా?",
+              "ట్రాఫిక్ బాగుంది... రేపటినుంచి నీకు రోజూ లీవ్ కావాలా?",
+            ];
+            return {
+              id: stem.sceneId || i + 1,
+              speaker: speakers[i] || `పాత్ర ${i + 1}`,
+              telugu: dialogues[i] || "తెలుగు సంభాషణ...",
+              emotion: stem.emotionTag || "సహజమైన ఎమోషన్",
+              duration: `${stem.durationSeconds || 4.5}s`,
+              speed: 1.0,
+              lufs: `${stem.normalizedLufs || -16.0} LUFS`,
+            };
+          })
+        );
+      }
+    } catch (err) {
+      console.warn("Failed to synthesize stems:", err);
+    } finally {
+      setIsSynthesizing(false);
+    }
   };
 
   return (
@@ -263,10 +339,8 @@ export function VoiceStudioView() {
                   title="No Voice Stems Synthesized Yet"
                   description="Synthesize dialogue tracks for your scenes using Agent 07 Telugu TTS or record scratch audio in the creator wizard."
                   action={{
-                    label: "Launch Video Wizard",
-                    onClick: () => {
-                      window.location.href = "/studio/create";
-                    },
+                    label: "Synthesize Stems with Agent 07",
+                    onClick: handleSynthesizeAllStems,
                   }}
                 />
               ) : (

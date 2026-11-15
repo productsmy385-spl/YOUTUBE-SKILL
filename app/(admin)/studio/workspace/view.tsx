@@ -49,7 +49,7 @@ import {
   MessageSquare,
   Wand2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 interface SceneItem {
@@ -82,6 +82,60 @@ export function ProductionWorkspaceView() {
   const [projectTitle, setProjectTitle] = useState<string>("Active Telugu Video Production");
 
   const [scenes, setScenes] = useState<SceneItem[]>([]);
+  const [currentProjectId, setCurrentProjectId] = useState<string>("");
+
+  useEffect(() => {
+    const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+    const qProjectId = params?.get("projectId");
+
+    async function loadWorkspaceData() {
+      try {
+        let targetProjectId = qProjectId;
+        if (!targetProjectId) {
+          const pRes = await fetch("/api/projects");
+          const pData = await pRes.json();
+          if (pData.projects && pData.projects.length > 0) {
+            targetProjectId = pData.projects[0].id;
+          }
+        }
+
+        if (targetProjectId) {
+          setCurrentProjectId(targetProjectId);
+          const res = await fetch(`/api/orchestrator?projectId=${targetProjectId}`);
+          const data = await res.json();
+          if (data.state) {
+            if (data.state.storyboard?.scenes) {
+              setScenes(
+                data.state.storyboard.scenes.map((s: { sceneId: number; sceneNumber: string; location: string; shotType: string; cameraMovement: string; emotion: string; dialogueTelugu: string; visualPrompt: string; durationSeconds: number }) => ({
+                  id: s.sceneId,
+                  number: s.sceneNumber,
+                  location: s.location,
+                  shotType: s.shotType,
+                  cameraMovement: s.cameraMovement,
+                  emotion: s.emotion,
+                  dialogueTelugu: s.dialogueTelugu,
+                  visualPrompt: s.visualPrompt,
+                  duration: `${s.durationSeconds}s`,
+                  status: "Completed",
+                  audioUrl: `/media/voice/scene_${s.sceneId}_stem.wav`,
+                }))
+              );
+            }
+            if (data.state.script?.title) {
+              setProjectTitle(data.state.script.title);
+            }
+            if (data.state.isApproved) {
+              setIsApproved(true);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Notice loading workspace data:", err);
+      }
+    }
+
+    loadWorkspaceData();
+  }, []);
 
   const handleOpenTweak = (scene: SceneItem) => {
     setActiveTweakScene(scene);
@@ -96,24 +150,23 @@ export function ProductionWorkspaceView() {
 
     try {
       const res = await fetch("/api/orchestrator", {
-        method: "POST",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "regenerate_scene",
-          projectId: "proj_telugu_101",
-          sceneNumber: sceneId,
-          creativeFeedback: feedback || "Refine facial animation and lighting dynamics.",
+          projectId: currentProjectId || "00000000-0000-0000-0000-000000000001",
+          sceneId,
         }),
       });
       const data = await res.json();
-      if (data.scene) {
+      if (data.updatedShot) {
         setScenes((prev) =>
           prev.map((s) =>
             s.id === sceneId
               ? {
                   ...s,
-                  visualPrompt: data.scene.visualPrompt || s.visualPrompt,
-                  emotion: data.scene.emotion || s.emotion,
+                  visualPrompt: data.updatedShot.visualPrompt || s.visualPrompt,
+                  emotion: data.updatedShot.emotion || s.emotion,
                   status: "Completed",
                 }
               : s
@@ -121,8 +174,7 @@ export function ProductionWorkspaceView() {
         );
       }
     } catch {
-      // Deterministic simulation
-      await new Promise((r) => setTimeout(r, 1200));
+      // Graceful fallback
     } finally {
       setRegeneratingSceneId(null);
     }
@@ -132,8 +184,20 @@ export function ProductionWorkspaceView() {
     setIsPlayingAudio(isPlayingAudio === id ? null : id);
   };
 
-  const handleApprove = () => {
+  const handleApprove = async () => {
     setIsApproved(true);
+    try {
+      await fetch("/api/orchestrator", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "approve",
+          projectId: currentProjectId || "00000000-0000-0000-0000-000000000001",
+        }),
+      });
+    } catch (e) {
+      console.warn("Approve notice:", e);
+    }
   };
 
   return (

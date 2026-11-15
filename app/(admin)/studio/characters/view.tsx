@@ -67,7 +67,7 @@ export function CharacterStudioView() {
         if (res.ok) {
           const data = await res.json();
           if (data.characters && Array.isArray(data.characters)) {
-            const mapped = data.characters.map((c: any) => ({
+            const mapped = data.characters.map((c: { id: string; name: string; role?: string; ageRange?: string; age?: string; facialFeatures?: string; appearance?: string; clothingDescription?: string; clothing?: string; voice?: string; scenesCount?: number; isConsentVerified?: boolean; referenceImageUrl?: string }) => ({
               id: c.id,
               name: c.name,
               role: c.role || "Lead Role",

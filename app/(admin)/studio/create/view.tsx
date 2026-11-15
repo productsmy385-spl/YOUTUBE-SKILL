@@ -302,8 +302,8 @@ export function CreateVideoView() {
   const handleLaunchProduction = async () => {
     setIsSubmitting(true);
     try {
-      const projectId = "proj_" + Math.random().toString(36).substring(2, 9);
-      await fetch("/api/orchestrator", {
+      const projectId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : "00000000-0000-0000-0000-" + Date.now().toString(16).padStart(12, "0");
+      const res = await fetch("/api/orchestrator", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -330,7 +330,9 @@ export function CreateVideoView() {
           },
         }),
       });
-      router.push("/studio/workspace");
+      const data = await res.json();
+      const targetId = data.projectId || projectId;
+      router.push(`/studio/workspace?projectId=${targetId}`);
     } catch (err) {
       console.error("Failed to launch production:", err);
       router.push("/studio/workspace");

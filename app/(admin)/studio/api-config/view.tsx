@@ -22,11 +22,11 @@ import {
 
 export function ApiConfigStudioView() {
   const [showKeys, setShowKeys] = React.useState<Record<string, boolean>>({});
-  const [geminiKey, setGeminiKey] = React.useState("AIzaSyD-mock-gemini-studio-production-key-9482");
-  const [ytClientId, setYtClientId] = React.useState("7829481920-yt.apps.googleusercontent.com");
-  const [ytSecret, setYtSecret] = React.useState("GOCSPX-mock_youtube_secret_hash");
-  const [metaAppId, setMetaAppId] = React.useState("984102948201948");
-  const [metaSecret, setMetaSecret] = React.useState("meta_secret_hash_e9420");
+  const [geminiKey, setGeminiKey] = React.useState("");
+  const [ytClientId, setYtClientId] = React.useState("");
+  const [ytSecret, setYtSecret] = React.useState("");
+  const [metaAppId, setMetaAppId] = React.useState("");
+  const [metaSecret, setMetaSecret] = React.useState("");
   const [isSaved, setIsSaved] = React.useState(false);
 
   const toggleShow = (id: string) => {

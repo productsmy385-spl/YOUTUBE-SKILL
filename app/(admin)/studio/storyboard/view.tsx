@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input, Field } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import {
   Camera,
   Clapperboard,
@@ -42,6 +43,9 @@ interface ShotDetail {
 
 export function StoryboardStudioView() {
   const [shots, setShots] = useState<ShotDetail[]>([]);
+  const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+  const [conceptPrompt, setConceptPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const handleAddShot = () => {
     const newShot: ShotDetail = {
@@ -59,6 +63,56 @@ export function StoryboardStudioView() {
     setShots((prev) => [...prev, newShot]);
   };
 
+  const handleGenerateWithAgent04 = async () => {
+    if (!conceptPrompt.trim()) return;
+    setIsGenerating(true);
+    try {
+      // First generate script if needed
+      const scriptRes = await fetch("/api/agents/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentCode: "telugu_script_writer",
+          payload: { title: conceptPrompt.substring(0, 30), rawInput: conceptPrompt },
+        }),
+      });
+      const scriptData = await scriptRes.json();
+
+      // Next call Film Director
+      const res = await fetch("/api/agents/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentCode: "film_director",
+          payload: { script: scriptData.data },
+        }),
+      });
+
+      const data = await res.json();
+      if (data.data?.scenes) {
+        setShots(
+          data.data.scenes.map((s: { sceneId: number; sceneNumber: string; location: string; shotType: string; cameraMovement: string; lighting: string; durationSeconds: number; dialogueTelugu: string; emotion: string; visualPrompt: string }) => ({
+            id: s.sceneId,
+            number: s.sceneNumber,
+            location: s.location,
+            shotType: s.shotType,
+            cameraMovement: s.cameraMovement,
+            lighting: s.lighting,
+            duration: `${s.durationSeconds}s`,
+            dialogue: s.dialogueTelugu,
+            emotion: s.emotion,
+            prompt: s.visualPrompt,
+          }))
+        );
+        setIsGenerateModalOpen(false);
+      }
+    } catch (err) {
+      console.error("Failed to generate storyboard:", err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -66,12 +120,15 @@ export function StoryboardStudioView() {
         description="Film Director Agent 04 transforms your script into cinematic shots with location details, camera angles, lighting atmosphere, and visual generation prompts."
         actions={
           <div className="flex items-center gap-2">
-            <Link href="/studio/characters">
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <Camera className="h-4 w-4" />
-                <span>Character Bible</span>
-              </Button>
-            </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setIsGenerateModalOpen(true)}
+            >
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span>Generate with Agent 04</span>
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -97,10 +154,8 @@ export function StoryboardStudioView() {
           title="No Storyboard Generated Yet"
           description="Film Director Agent 04 transforms your dialogue script into cinematic camera shots, camera movement directives, and visual prompts for Gemini Video."
           action={{
-            label: "Create in Video Wizard",
-            onClick: () => {
-              window.location.href = "/studio/create";
-            },
+            label: "Generate Storyboard with Agent 04",
+            onClick: () => setIsGenerateModalOpen(true),
           }}
         />
       ) : (
@@ -119,30 +174,23 @@ export function StoryboardStudioView() {
               </CardHeader>
 
               <CardContent className="space-y-3">
-                {/* Visualizer Frame */}
-                <div className="aspect-[16/9] w-full rounded-lg bg-black/95 flex flex-col justify-end p-4 border border-border relative overflow-hidden group">
-                  <div className="absolute inset-0 flex items-center justify-center opacity-40 group-hover:opacity-70 transition-opacity">
-                    <Film className="h-10 w-10 text-primary" />
+                <div className="grid grid-cols-2 gap-3 text-2xs">
+                  <div>
+                    <span className="text-muted-foreground block">Camera Motion:</span>
+                    <span className="font-semibold text-foreground">{shot.cameraMovement}</span>
                   </div>
-                  <div className="relative z-10 bg-black/80 backdrop-blur-xs p-2 rounded-md">
-                    <p className="text-xs font-semibold text-white truncate font-sans">
-                      {shot.dialogue}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-2xs">
-                  <div className="rounded bg-muted/40 p-2 border border-border/60">
-                    <span className="text-muted-foreground">Movement:</span>
-                    <p className="font-semibold text-foreground truncate">{shot.cameraMovement}</p>
-                  </div>
-                  <div className="rounded bg-muted/40 p-2 border border-border/60">
-                    <span className="text-muted-foreground">Lighting:</span>
-                    <p className="font-semibold text-foreground truncate">{shot.lighting}</p>
+                  <div>
+                    <span className="text-muted-foreground block">Lighting Style:</span>
+                    <span className="font-semibold text-foreground">{shot.lighting}</span>
                   </div>
                 </div>
 
-                <Field label="Gemini Video Generative Prompt (Agent 04 &rarr; 06)">
+                <div className="rounded-lg bg-muted/40 p-2.5 border border-border text-xs space-y-1">
+                  <span className="text-2xs font-semibold text-primary block">Spoken Dialogue:</span>
+                  <p className="font-sans text-foreground">{shot.dialogue}</p>
+                </div>
+
+                <Field label="Gemini Video Generative Prompt">
                   <Textarea
                     rows={3}
                     value={shot.prompt}
@@ -151,16 +199,25 @@ export function StoryboardStudioView() {
                       updated[idx].prompt = e.target.value;
                       setShots(updated);
                     }}
-                    className="text-2xs font-mono"
+                    className="text-xs font-mono"
                   />
                 </Field>
               </CardContent>
 
-              <CardFooter className="pt-0 flex items-center justify-between border-t border-border pt-3">
-                <span className="text-2xs text-muted-foreground">
-                  Emotion: <strong>{shot.emotion}</strong>
-                </span>
-                <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
+              <CardFooter className="flex items-center justify-between border-t border-border pt-3">
+                <Badge variant="outline" className="text-2xs">
+                  {shot.emotion}
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1 text-2xs h-7"
+                  onClick={() => {
+                    const updated = [...shots];
+                    updated[idx].prompt = `${shot.prompt} (Refined for sharper cinematic lighting and authentic Telugu facial micro-expressions)`;
+                    setShots(updated);
+                  }}
+                >
                   <RefreshCw className="h-3 w-3" />
                   <span>Refine Shot</span>
                 </Button>
@@ -169,6 +226,60 @@ export function StoryboardStudioView() {
           ))}
         </div>
       )}
+
+      {/* Generate Storyboard Modal */}
+      <Dialog open={isGenerateModalOpen} onOpenChange={setIsGenerateModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              Generate Cinematic Storyboard with Agent 04
+            </DialogTitle>
+            <DialogDescription>
+              Enter your video topic or scene description. Film Director Agent 04 will produce a shot-by-shot cinematic storyboard.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-xs font-semibold text-foreground block mb-1">
+                Video Topic or Narrative Scene
+              </label>
+              <Textarea
+                rows={4}
+                value={conceptPrompt}
+                onChange={(e) => setConceptPrompt(e.target.value)}
+                placeholder="ఉదాహరణ: హైదరాబాద్ హైటెక్ సిటీలో ఒక ఆఫీస్ ఉద్యోగి అనుకోకుండా ఒక రహస్యం తెలుసుకోవడం..."
+                className="text-xs"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsGenerateModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="brand"
+              onClick={handleGenerateWithAgent04}
+              disabled={isGenerating || !conceptPrompt.trim()}
+              className="gap-2"
+            >
+              {isGenerating ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  Generating Storyboard...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Generate Storyboard
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

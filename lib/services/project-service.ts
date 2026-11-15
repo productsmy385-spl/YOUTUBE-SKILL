@@ -1,5 +1,5 @@
-import { getDb, schema } from "@/lib/db";
-import { getSession } from "@/lib/auth/session";
+import { getDb, schema, ensureDatabaseInitialized } from "@/lib/db";
+import { getSession, DEFAULT_WORKSPACE_ID, DEFAULT_USER_ID } from "@/lib/auth/session";
 import { logAuditEvent } from "./audit";
 import { eq } from "drizzle-orm";
 
@@ -14,6 +14,7 @@ export interface CreateProjectInput {
 }
 
 export async function createVideoProject(input: CreateProjectInput) {
+  await ensureDatabaseInitialized();
   const session = await getSession();
   const db = getDb();
 
@@ -23,9 +24,12 @@ export async function createVideoProject(input: CreateProjectInput) {
     .replace(/\s+/g, "-")
     .substring(0, 50) + `-${Date.now().toString(36)}`;
 
+  const workspaceId = session?.workspaceId || DEFAULT_WORKSPACE_ID;
+  const creatorId = session?.userId || DEFAULT_USER_ID;
+
   const projectRecord = {
-    workspaceId: session?.workspaceId || "ws-primary-001",
-    creatorId: session?.userId || "user-dev-creator-001",
+    workspaceId,
+    creatorId,
     title: input.title,
     slug,
     targetPlatform: input.targetPlatform,
@@ -35,21 +39,7 @@ export async function createVideoProject(input: CreateProjectInput) {
   };
 
   if (!db) {
-    // Return mock object when running offline
-    const mockId = `proj-mock-${Date.now()}`;
-    await logAuditEvent({
-      action: "project:create",
-      entityType: "video_project",
-      entityId: mockId,
-      metadata: { title: input.title, platform: input.targetPlatform },
-    });
-
-    return {
-      id: mockId,
-      ...projectRecord,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    throw new Error("PostgreSQL database connection is unavailable");
   }
 
   const [inserted] = await db

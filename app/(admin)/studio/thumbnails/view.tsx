@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input, Field } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
   CheckCircle2,
   Download,
@@ -35,6 +37,9 @@ interface ThumbnailConcept {
 
 export function ThumbnailStudioView() {
   const [concepts, setConcepts] = useState<ThumbnailConcept[]>([]);
+  const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+  const [titleInput, setTitleInput] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const selectPrimary = (id: number) => {
     setConcepts((prev) => prev.map((c) => ({ ...c, isPrimary: c.id === id })));
@@ -52,13 +57,59 @@ export function ThumbnailStudioView() {
     setConcepts((prev) => [...prev, newConcept]);
   };
 
+  const handleGenerateWithAgent12 = async () => {
+    if (!titleInput.trim()) return;
+    setIsGenerating(true);
+    try {
+      const res = await fetch("/api/agents/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentCode: "thumbnail_designer",
+          payload: {
+            script: { title: titleInput },
+            brief: { oneLineConcept: titleInput },
+          },
+        }),
+      });
+
+      const data = await res.json();
+      if (Array.isArray(data.data)) {
+        setConcepts(
+          data.data.map((c: { conceptName: string; teluguHeadline: string; contrastScore: number }, i: number) => ({
+            id: Date.now() + i,
+            title: c.conceptName,
+            teluguHeadline: c.teluguHeadline,
+            expression: i === 0 ? "Shocked Eyes & Mouth Open" : i === 1 ? "Laughing Reaction Face-off" : "Curious Eye-contact Punch",
+            contrastScore: c.contrastScore,
+            isPrimary: i === 0,
+          }))
+        );
+        setIsGenerateModalOpen(false);
+      }
+    } catch (err) {
+      console.error("Failed to generate thumbnails:", err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Thumbnail Studio"
-        description="Agent 11 (Thumbnail Designer) produces expressive YouTube thumbnails tailored to high click-through rates. Bold Telugu typography and high contrast ensure visibility on mobile feeds."
+        description="Agent 12 (Thumbnail Designer) produces expressive YouTube thumbnails tailored to high click-through rates. Bold Telugu typography and high contrast ensure visibility on mobile feeds."
         actions={
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setIsGenerateModalOpen(true)}
+            >
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span>Generate with Agent 12</span>
+            </Button>
             <Button variant="outline" size="sm" className="gap-1.5" onClick={handleAddConcept}>
               <Plus className="h-4 w-4" />
               <span>Add Concept</span>
@@ -77,12 +128,10 @@ export function ThumbnailStudioView() {
         <EmptyState
           icon={<ImageIcon className="h-8 w-8" />}
           title="No Thumbnails Designed Yet"
-          description="Agent 11 produces high-contrast Telugu thumbnail variants tailored for maximum mobile click-through rates with bold typography."
+          description="Agent 12 produces high-contrast Telugu thumbnail variants tailored for maximum mobile click-through rates with bold typography."
           action={{
-            label: "Create in Video Wizard",
-            onClick: () => {
-              window.location.href = "/studio/create";
-            },
+            label: "Generate Thumbnails with Agent 12",
+            onClick: () => setIsGenerateModalOpen(true),
           }}
         />
       ) : (
@@ -159,6 +208,60 @@ export function ThumbnailStudioView() {
           ))}
         </div>
       )}
+
+      {/* Generate Thumbnails Modal */}
+      <Dialog open={isGenerateModalOpen} onOpenChange={setIsGenerateModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              Generate Thumbnails with Agent 12
+            </DialogTitle>
+            <DialogDescription>
+              Enter video title or narrative hook. Agent 12 will generate 3 viral, high-contrast Telugu thumbnail variants.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-xs font-semibold text-foreground block mb-1">
+                Video Title or Headline Hook
+              </label>
+              <Textarea
+                rows={3}
+                value={titleInput}
+                onChange={(e) => setTitleInput(e.target.value)}
+                placeholder="ఉదాహరణ: ఆఫీస్ లో బాస్ ఇచ్చిన షాక్..."
+                className="text-xs font-sans"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsGenerateModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="brand"
+              onClick={handleGenerateWithAgent12}
+              disabled={isGenerating || !titleInput.trim()}
+              className="gap-2"
+            >
+              {isGenerating ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  Designing Thumbnails...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Generate 3 Variants
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

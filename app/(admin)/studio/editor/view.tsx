@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import {
   CheckCircle2,
   Clapperboard,
@@ -21,6 +22,7 @@ import {
   Music,
   Pause,
   Play,
+  RefreshCw,
   Scissors,
   Share2,
   Sparkles,
@@ -33,6 +35,40 @@ import Link from "next/link";
 export function TimelineEditorView() {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<string>("00:18.4");
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [renderResult, setRenderResult] = useState<{
+    finalVideoUrl: string;
+    resolution: string;
+    fps: number;
+    durationSeconds: number;
+    fileSizeBytes: number;
+  } | null>(null);
+
+  const handleExportRender = async () => {
+    setIsExporting(true);
+    try {
+      const res = await fetch("/api/agents/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentCode: "video_editor",
+          payload: {
+            durationSeconds: 45,
+            aspectRatio: "9:16",
+          },
+        }),
+      });
+
+      const data = await res.json();
+      if (data.data) {
+        setRenderResult(data.data);
+      }
+    } catch (err) {
+      console.error("Failed to render video:", err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -47,9 +83,24 @@ export function TimelineEditorView() {
                 <span>Thumbnail Studio</span>
               </Button>
             </Link>
-            <Button variant="brand" size="sm" className="gap-1.5 font-bold shadow-card">
-              <Scissors className="h-4 w-4" />
-              <span>Export Render (FFmpeg)</span>
+            <Button
+              variant="brand"
+              size="sm"
+              className="gap-1.5 font-bold shadow-card"
+              onClick={handleExportRender}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <span>Rendering in Railway Worker...</span>
+                </>
+              ) : (
+                <>
+                  <Scissors className="h-4 w-4" />
+                  <span>Export Render (FFmpeg)</span>
+                </>
+              )}
             </Button>
           </div>
         }
@@ -216,7 +267,54 @@ export function TimelineEditorView() {
           </Card>
         </div>
       </div>
+
+      {/* Render Complete Dialog */}
+      {renderResult && (
+        <Dialog open={!!renderResult} onOpenChange={() => setRenderResult(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                FFmpeg Render Completed
+              </DialogTitle>
+              <DialogDescription>
+                Broadcast master assembled with burned subtitles and ducked audio.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3 py-2 text-xs">
+              <div className="flex justify-between py-1 border-b border-border">
+                <span className="text-muted-foreground">Output File:</span>
+                <span className="font-mono font-semibold text-foreground">{renderResult.finalVideoUrl}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-border">
+                <span className="text-muted-foreground">Resolution & FPS:</span>
+                <span className="font-mono text-foreground">{renderResult.resolution} @ {renderResult.fps}fps</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-border">
+                <span className="text-muted-foreground">Duration:</span>
+                <span className="font-mono text-foreground">{renderResult.durationSeconds}s</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-muted-foreground">Master Size:</span>
+                <span className="font-mono text-foreground">{(renderResult.fileSizeBytes / 1024 / 1024).toFixed(2)} MB</span>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRenderResult(null)}>
+                Close
+              </Button>
+              <Link href="/studio/youtube">
+                <Button variant="brand" className="gap-1.5 font-bold">
+                  <span>Publish to YouTube</span>
+                  <Sparkles className="w-4 h-4" />
+                </Button>
+              </Link>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
-

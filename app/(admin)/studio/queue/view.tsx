@@ -26,7 +26,7 @@ import {
   Tv,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface QueueJob extends Record<string, unknown> {
   id: string;
@@ -42,6 +42,29 @@ interface QueueJob extends Record<string, unknown> {
 
 export function ProductionQueueView() {
   const [jobs, setJobs] = useState<QueueJob[]>([]);
+
+  useEffect(() => {
+    fetch("/api/agents")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.recentRuns && Array.isArray(data.recentRuns)) {
+          setJobs(
+            data.recentRuns.map((r: { id: string; projectId: string; triggerEvent: string; status: string; durationMs: number; startedAt: string }) => ({
+              id: `RUN-${r.id.substring(0, 8).toUpperCase()}`,
+              project: `Project ${r.projectId.substring(0, 8)}`,
+              type: r.triggerEvent || "workflow_step",
+              stage: "Production Execution",
+              agent: "AI Agent Execution",
+              status: r.status === "completed" ? "Completed" : r.status === "running" ? "Running" : "Queued",
+              progress: r.status === "completed" ? 100 : 50,
+              duration: `${((r.durationMs || 350) / 1000).toFixed(1)}s`,
+              startedAt: new Date(r.startedAt).toLocaleTimeString(),
+            }))
+          );
+        }
+      })
+      .catch((err) => console.warn("Failed to load queue jobs:", err));
+  }, []);
 
   const runningCount = jobs.filter((j) => j.status === "Running").length;
   const completedCount = jobs.filter((j) => j.status === "Completed").length;

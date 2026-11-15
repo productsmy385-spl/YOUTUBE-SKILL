@@ -398,7 +398,7 @@ export class VideoEditorAgent {
 // ─── AGENT 12: THUMBNAIL DESIGNER ──────────────────────────────────────────
 export class ThumbnailDesignerAgent {
   static async execute(script: TeluguScriptArtifact, brief: ProductionBriefArtifact): Promise<ThumbnailArtifact[]> {
-    const titleLead = script.title.split("-")[0].trim();
+    const titleLead = (script?.title || brief?.oneLineConcept || "తెలుగు వీడియో").split("-")[0].trim();
 
     return [
       {
@@ -426,11 +426,13 @@ export class ThumbnailDesignerAgent {
 // ─── AGENT 13: YOUTUBE METADATA & SEO STRATEGIST ───────────────────────────
 export class SEOMetadataAgent {
   static async execute(input: CreatorBriefInput, script: TeluguScriptArtifact, brief: ProductionBriefArtifact): Promise<PublishingMetadataArtifact> {
-    const titleLead = input.title;
+    const titleLead = input?.title || "Telugu Video";
+    const oneLine = brief?.oneLineConcept || titleLead;
+    const scriptSnippet = (script?.fullTeluguText || "").substring(0, 300);
 
     return {
       youtubeTitle: `${titleLead} | Telugu Trending Video | Sir's AI Studio`,
-      youtubeDescription: `${titleLead} - ప్రత్యేక తెలుగు వీడియో.\n\n${brief.oneLineConcept}\n\nకథ మరియు సంభాషణలు:\n${script.fullTeluguText.substring(0, 300)}...\n\n🔔 Subscribe to Sir's AI Telugu Studio for more daily content!\n#Telugu #TeluguShorts #TeluguTrending #AIStudio`,
+      youtubeDescription: `${titleLead} - ప్రత్యేక తెలుగు వీడియో.\n\n${oneLine}\n\nకథ మరియు సంభాషణలు:\n${scriptSnippet}...\n\n🔔 Subscribe to Sir's AI Telugu Studio for more daily content!\n#Telugu #TeluguShorts #TeluguTrending #AIStudio`,
       tags: [
         "Telugu",
         "Telugu comedy",

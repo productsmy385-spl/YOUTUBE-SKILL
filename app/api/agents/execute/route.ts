@@ -70,10 +70,20 @@ export async function POST(req: NextRequest) {
       }
 
       case "film_director": {
-        const script = payload?.script as TeluguScriptArtifact;
+        const script = (payload?.script || {
+          title: payload?.title || "Telugu Short",
+          totalScenes: 4,
+          dialogueScenes: [
+            { sceneId: 1, speaker: "Hero", dialogueTelugu: "అసలు ఏం జరిగింది?", englishMeaning: "What happened?", emotionCue: "Curious", pauseAfterSeconds: 0.5 },
+            { sceneId: 2, speaker: "Friend", dialogueTelugu: "తెలిస్తే షాక్ అవుతావు!", englishMeaning: "You will be shocked!", emotionCue: "Shock", pauseAfterSeconds: 0.5 },
+          ],
+          fullTeluguText: "అసలు ఏం జరిగింది? తెలిస్తే షాక్ అవుతావు!",
+          dialectRegister: "Conversational Urban Telugu",
+          grammarVerified: true,
+        }) as TeluguScriptArtifact;
         const input: CreatorBriefInput = {
           projectId,
-          title: payload?.title || "Storyboard",
+          title: payload?.title || script.title,
           rawInput: "",
           inputLanguage: "te",
           platform: payload?.platform || "youtube_shorts",
@@ -89,21 +99,53 @@ export async function POST(req: NextRequest) {
       }
 
       case "character_designer": {
-        const script = payload?.script as TeluguScriptArtifact;
+        const script = (payload?.script || {
+          title: payload?.title || "Telugu Short",
+          totalScenes: 4,
+          dialogueScenes: [
+            { sceneId: 1, speaker: "Hero", dialogueTelugu: "హలో", englishMeaning: "Hello", emotionCue: "Happy", pauseAfterSeconds: 0.5 },
+            { sceneId: 2, speaker: "Friend", dialogueTelugu: "ఏంటి సంగతి?", englishMeaning: "What is up?", emotionCue: "Curious", pauseAfterSeconds: 0.5 },
+          ],
+          fullTeluguText: "హలో, ఏంటి సంగతి?",
+          dialectRegister: "Conversational Urban Telugu",
+          grammarVerified: true,
+        }) as TeluguScriptArtifact;
         result = await CharacterDesignerAgent.execute(script);
         cost = 0.02;
         break;
       }
 
       case "gemini_video": {
-        const storyboard = payload?.storyboard as StoryboardArtifact;
+        const storyboard = (payload?.storyboard || {
+          scenes: [
+            {
+              sceneNumber: 1,
+              visualDescription: payload?.prompt || "Cinematic close-up of dynamic Telugu protagonist reacting with curiosity",
+              cameraMovement: "Slow push in",
+              lighting: "Warm cinematic",
+              estimatedDurationSeconds: 4,
+              teluguVisualCue: "నాయకుడి ఆసక్తికరమైన ముఖ కవళికలు",
+            },
+          ],
+          totalDurationSeconds: 4,
+          visualContinuityNotes: "100% Character Bible consistency maintained",
+        }) as StoryboardArtifact;
         result = await GeminiVideoAgent.execute(storyboard);
         cost = 0.08;
         break;
       }
 
       case "telugu_voice": {
-        const script = payload?.script as TeluguScriptArtifact;
+        const script = (payload?.script || {
+          title: payload?.title || "Telugu Voice",
+          totalScenes: 1,
+          dialogueScenes: [
+            { sceneId: 1, speaker: "Hero", dialogueTelugu: payload?.text || "నమస్కారం! సిరి యూట్యూబ్ స్టూడియోకి స్వాగతం.", englishMeaning: "Welcome", emotionCue: "Enthusiastic", pauseAfterSeconds: 0.5 },
+          ],
+          fullTeluguText: payload?.text || "నమస్కారం!",
+          dialectRegister: "Conversational Urban Telugu",
+          grammarVerified: true,
+        }) as TeluguScriptArtifact;
         result = await TeluguVoiceDirectorAgent.execute(script);
         cost = 0.03;
         break;
@@ -111,8 +153,15 @@ export async function POST(req: NextRequest) {
 
       case "music_director":
       case "sound_designer": {
-        const brief = payload?.brief as ProductionBriefArtifact;
-        const storyboard = payload?.storyboard as StoryboardArtifact;
+        const brief = (payload?.brief || {
+          genre: "Comedy",
+          oneLineConcept: payload?.title || "Telugu Short",
+        }) as ProductionBriefArtifact;
+        const storyboard = (payload?.storyboard || {
+          scenes: [],
+          totalDurationSeconds: 45,
+          visualContinuityNotes: "",
+        }) as StoryboardArtifact;
         result = await MusicAndSoundAgent.execute(brief, storyboard);
         cost = 0.02;
         break;
@@ -137,19 +186,39 @@ export async function POST(req: NextRequest) {
       }
 
       case "thumbnail_designer": {
-        const script = payload?.script as TeluguScriptArtifact;
-        const brief = payload?.brief as ProductionBriefArtifact;
+        const script = (payload?.script || {
+          title: payload?.title || "Viral Telugu Video",
+          totalScenes: 4,
+          dialogueScenes: [],
+          fullTeluguText: "",
+          dialectRegister: "Conversational Urban Telugu",
+          grammarVerified: true,
+        }) as TeluguScriptArtifact;
+        const brief = (payload?.brief || {
+          genre: "Comedy",
+          oneLineConcept: payload?.title || "Viral Telugu Video",
+        }) as ProductionBriefArtifact;
         result = await ThumbnailDesignerAgent.execute(script, brief);
         cost = 0.02;
         break;
       }
 
       case "seo_metadata": {
-        const script = payload?.script as TeluguScriptArtifact;
-        const brief = payload?.brief as ProductionBriefArtifact;
+        const script = (payload?.script || {
+          title: payload?.title || "Viral Telugu Video",
+          totalScenes: 4,
+          dialogueScenes: [],
+          fullTeluguText: payload?.description || "తెలుగు లో అద్భుతమైన వీడియో",
+          dialectRegister: "Conversational Urban Telugu",
+          grammarVerified: true,
+        }) as TeluguScriptArtifact;
+        const brief = (payload?.brief || {
+          genre: "Comedy",
+          oneLineConcept: payload?.title || "Viral Telugu Video",
+        }) as ProductionBriefArtifact;
         const input: CreatorBriefInput = {
           projectId,
-          title: payload?.title || "Video",
+          title: payload?.title || "Viral Telugu Video",
           rawInput: "",
           inputLanguage: "te",
           platform: "youtube_shorts",
@@ -165,8 +234,19 @@ export async function POST(req: NextRequest) {
       }
 
       case "quality_control": {
-        const script = payload?.script as TeluguScriptArtifact;
-        const storyboard = payload?.storyboard as StoryboardArtifact;
+        const script = (payload?.script || {
+          title: "QC Check",
+          totalScenes: 4,
+          dialogueScenes: [],
+          fullTeluguText: "",
+          dialectRegister: "Conversational Urban Telugu",
+          grammarVerified: true,
+        }) as TeluguScriptArtifact;
+        const storyboard = (payload?.storyboard || {
+          scenes: [],
+          totalDurationSeconds: 45,
+          visualContinuityNotes: "",
+        }) as StoryboardArtifact;
         result = await QualityControlAgent.execute(script, storyboard);
         cost = 0.01;
         break;

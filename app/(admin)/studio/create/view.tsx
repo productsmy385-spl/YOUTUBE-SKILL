@@ -49,6 +49,7 @@ import {
   UploadCloud,
   Video,
   Volume2,
+  Wand2,
   Wrench,
   X,
   Zap,
@@ -86,9 +87,47 @@ export interface UploadedCreativeAsset {
   targetSceneOrder?: number;
 }
 
+const TEMPLATE_PRESETS = [
+  {
+    tag: "🎭 వైరల్ కామెడీ (Comedy Skit)",
+    title: "AI టూల్స్ తో క్రియేటర్స్ హంగామా",
+    dialogue: "రాము: ఏరా బాసూ! అందరూ AI తో వీడియోలు తీస్తున్నారు, నువ్వింకా పాత కాలంలోనే ఉన్నావా?\nసోము: పాత కాలం కాదురా బాబు, మా ఇంట్లో మొబైల్ రీఛార్జ్ కే డబ్బులు లేవు, ఇక AI కి ఎక్కడి నుంచి తేను!\nరాము: సిరి AI స్టూడియో ఉందిగా! రూపాయి ఖర్చు లేకుండా తెలుగులో ఫుల్ వీడియో రెడీ చేసేస్తుంది!\nసోము: నిజమా?! అయితే ఇప్పుడే సబ్‌స్క్రైబ్ చేసుకుని వాడేస్తా!",
+    genre: "comedy",
+    tone: "conversational",
+    duration: "45",
+  },
+  {
+    tag: "⚡ 3-సెకన్ల హుక్ (Curiosity Hook)",
+    title: "తెలుగు క్రియేటర్స్ అసలు రహస్యం",
+    dialogue: "హీరో: అసలు ఈ ఒక్క సీక్రెట్ మీకు ముందే తెలిస్తే ఎంత టైమ్ ఆదా అయ్యేదో తెలుసా?\nఫ్రెండ్: ఏంటది? యూట్యూబ్ లో వ్యూస్ పెంచే మంత్రమా?\nహీరో: మంత్రం కాదు బాస్! పర్ఫెక్ట్ తెలుగు స్క్రిప్ట్, సినిమాటిక్ విజువల్స్, క్లియర్ వాయిస్ ఓవర్... ఇవన్నీ ఒక్క క్లిక్ తో ఇచ్చే AI!\nఫ్రెండ్: సూపర్! వెంటనే ఈ వీడియోను సేవ్ చేసుకోండి!",
+    genre: "educational",
+    tone: "high_energy",
+    duration: "30",
+  },
+  {
+    tag: "🎬 సినిమాటిక్ కథ (Cinematic Drama)",
+    title: "గ్రామంలో సంక్రాంతి జ్ఞాపకాలు",
+    dialogue: "తాతయ్య: మన ఊరి సంక్రాంతి పండుగ శోభ ఎక్కడా రాదురా మనవడా.\nమనవడు: అవును తాతయ్యా, పట్నం గోల వదిలేసి ఇక్కడికి వస్తేనే అసలైన పండుగ గుర్తొచ్చింది.\nతాతయ్య: మన సంస్కృతి, పల్లెటూరి బంధాలు ఎప్పటికీ మర్చిపోకూడదురా.\nమనవడు: ఖచ్చితంగా తాతయ్యా, మన సంప్రదాయాలను భావితరాలకు అందిద్దాం!",
+    genre: "drama",
+    tone: "dramatic",
+    duration: "60",
+  },
+  {
+    tag: "📱 టెక్ & న్యూస్ (Tech Explainer)",
+    title: "2026 లో టాప్ 3 AI టూల్స్",
+    dialogue: "యాంకర్: మీరు యూట్యూబ్ లేదా ఇన్‌స్టాగ్రామ్‌లో వీడియోలు చేస్తున్నారా? అయితే ఈ 3 AI టూల్స్ మీ కోసమే!\nనెంబర్ 1: తెలుగు స్క్రిప్ట్ ఆటోమేషన్.\nనెంబర్ 2: క్యారెక్టర్ ఫేస్ కంటిన్యూటీ.\nనెంబర్ 3: ఫుల్ HD టైమ్‌లైన్ రెండరింగ్.\nఇవన్నీ సిరి AI స్టూడియోలో ఇప్పుడు అందుబాటులో ఉన్నాయి!",
+    genre: "educational",
+    tone: "conversational",
+    duration: "45",
+  },
+];
+
 export function CreateVideoView() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Mode Toggle: "quick" (simple, 1-click friendly) vs "pro" (full directorial suite)
+  const [creatorMode, setCreatorMode] = useState<"quick" | "pro">("quick");
 
   // Wizard State
   const [inputMode, setInputMode] = useState<"dialogue" | "voice" | "concept">("dialogue");
@@ -270,6 +309,15 @@ export function CreateVideoView() {
     }
   };
 
+  // Apply quick starter template
+  const handleApplyTemplate = (preset: typeof TEMPLATE_PRESETS[0]) => {
+    setTitle(preset.title);
+    setRawText(preset.dialogue);
+    setGenre(preset.genre);
+    setEmotionalTone(preset.tone);
+    setDurationTarget(preset.duration);
+  };
+
   // Creative Debate trigger
   const handleTriggerDebate = async () => {
     if (!title && !rawText && uploadedAssets.length === 0) {
@@ -345,7 +393,7 @@ export function CreateVideoView() {
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
       <PageHeader
         title="Create New Video"
-        description="Provide a Telugu dialogue, upload raw video cuts & reference images, or record voice. 16 specialized AI agents collaborate autonomously to produce your video."
+        description="Provide a Telugu dialogue, upload raw video cuts & reference images, or record voice. 18 specialized AI agents collaborate autonomously to produce your video."
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -374,6 +422,63 @@ export function CreateVideoView() {
           </div>
         }
       />
+
+      {/* Workflow Mode Pill (Quick 1-Click vs Pro Studio) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl border border-primary/30 bg-primary/5 shadow-card">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Sparkles className="h-4 w-4" />
+          </div>
+          <div>
+            <span className="text-xs font-bold text-foreground">Creator Experience Mode</span>
+            <p className="text-2xs text-muted-foreground">
+              {creatorMode === "quick"
+                ? "⚡ Quick Mode: 1-click presets, simplified inputs & instant agent launch."
+                : "🎛️ Pro Mode: Full directorial controls, dialects, agent debates & audio ducking."}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1 shadow-card">
+          <Button
+            type="button"
+            variant={creatorMode === "quick" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setCreatorMode("quick")}
+            className="text-xs h-7 gap-1 font-semibold"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>Quick Mode (Easy)</span>
+          </Button>
+          <Button
+            type="button"
+            variant={creatorMode === "pro" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setCreatorMode("pro")}
+            className="text-xs h-7 gap-1 font-semibold"
+          >
+            <Wrench className="h-3.5 w-3.5" />
+            <span>Pro Studio Mode</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Preset Suggestion Chips */}
+      <div className="flex flex-wrap items-center gap-2 p-3.5 rounded-xl border border-border bg-card shadow-card">
+        <span className="text-2xs font-semibold text-muted-foreground flex items-center gap-1">
+          <Wand2 className="h-3.5 w-3.5 text-primary" />
+          1-Click Starter Presets:
+        </span>
+        {TEMPLATE_PRESETS.map((preset, idx) => (
+          <button
+            key={idx}
+            type="button"
+            onClick={() => handleApplyTemplate(preset)}
+            className="rounded-full border border-border/80 bg-background px-3 py-1 text-2xs font-medium text-foreground transition-all hover:border-primary hover:bg-primary/5 hover:text-primary active:scale-95 shadow-sm"
+          >
+            {preset.tag}
+          </button>
+        ))}
+      </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left 2 Columns: Main Input, Media Uploads & Directorial Controls */}
@@ -955,7 +1060,7 @@ export function CreateVideoView() {
                 {isSubmitting ? (
                   <>
                     <RefreshCw className="h-4 w-4 animate-spin" />
-                    <span>Orchestrating 16 Agents...</span>
+                    <span>Orchestrating 18 Agents...</span>
                   </>
                 ) : (
                   <>

@@ -223,6 +223,25 @@ export function ThumbnailStudioView() {
           </DialogHeader>
 
           <div className="space-y-4 py-2">
+            <div className="flex flex-wrap items-center gap-1.5 pb-1">
+              <span className="text-2xs font-semibold text-muted-foreground">Quick Hooks:</span>
+              {[
+                "AI టూల్స్ తో క్రియేటర్స్ హంగామా",
+                "తెలుగు క్రియేటర్స్ అసలు రహస్యం",
+                "గ్రామంలో సంక్రాంతి పండుగ కథ",
+                "2026 లో టాప్ 3 AI టూల్స్",
+              ].map((hook, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setTitleInput(hook)}
+                  className="rounded-full border border-border bg-background px-2.5 py-0.5 text-2xs text-foreground transition-all hover:border-primary hover:text-primary active:scale-95"
+                >
+                  {hook}
+                </button>
+              ))}
+            </div>
+
             <div>
               <label className="text-xs font-semibold text-foreground block mb-1">
                 Video Title or Headline Hook

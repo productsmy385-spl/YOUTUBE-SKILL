@@ -38,7 +38,7 @@ export const navigation: NavGroup[] = [
     label: "AI Studio",
     items: [
       { title: "Studio Overview", href: "/studio", icon: LayoutDashboard },
-      { title: "Create Video", href: "/studio/create", icon: Sparkles, badge: "New" },
+      { title: "Create Video", href: "/studio/create", icon: Sparkles, badge: "Fast" },
       { title: "Production Workspace", href: "/studio/workspace", icon: Film },
       { title: "Production Queue", href: "/studio/queue", icon: ListOrdered },
     ],
@@ -50,7 +50,7 @@ export const navigation: NavGroup[] = [
       { title: "Storyboard Studio", href: "/studio/storyboard", icon: Layers },
       { title: "Character Studio", href: "/studio/characters", icon: UserCheck },
       { title: "Video Generator", href: "/studio/video-generator", icon: Clapperboard },
-      { title: "Telugu Voice Studio", href: "/studio/voice", icon: Mic },
+      { title: "Telugu Voice Studio", href: "/studio/voice", icon: Mic, badge: "te-IN" },
       { title: "Music Studio", href: "/studio/music", icon: Music },
       { title: "Sound Design", href: "/studio/sound-design", icon: Volume2 },
       { title: "Video Editor", href: "/studio/editor", icon: Scissors },
@@ -61,7 +61,7 @@ export const navigation: NavGroup[] = [
   {
     label: "Publishing & Operations",
     items: [
-      { title: "YouTube Operations", href: "/studio/youtube", icon: Tv },
+      { title: "YouTube Operations", href: "/studio/youtube", icon: Tv, badge: "Live" },
       { title: "Instagram Operations", href: "/studio/instagram", icon: Camera },
       { title: "Content Calendar", href: "/studio/calendar", icon: Calendar },
       { title: "Publishing Queue", href: "/studio/publishing-queue", icon: Send },
@@ -72,7 +72,7 @@ export const navigation: NavGroup[] = [
     items: [
       { title: "Analytics Dashboard", href: "/studio/analytics", icon: BarChart3 },
       { title: "Content Performance", href: "/studio/performance", icon: TrendingUp },
-      { title: "Agent Management", href: "/studio/agents", icon: Bot },
+      { title: "Agent Management", href: "/studio/agents", icon: Bot, badge: "18" },
       { title: "Skills & Tools", href: "/studio/skills", icon: Wrench },
       { title: "Workflow Automation", href: "/studio/automations", icon: Cpu },
     ],

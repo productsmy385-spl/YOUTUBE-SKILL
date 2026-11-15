@@ -89,6 +89,20 @@ export async function ensureDatabaseInitialized(): Promise<void> {
           '00000000-0000-0000-0000-000000000002'
         )
         ON CONFLICT (id) DO NOTHING;
+
+        INSERT INTO video_projects (id, workspace_id, creator_id, title, slug, target_platform, target_aspect_ratio, target_duration_seconds, status)
+        VALUES (
+          '00000000-0000-0000-0000-000000000001',
+          '00000000-0000-0000-0000-000000000001',
+          '00000000-0000-0000-0000-000000000002',
+          'Default Studio Sandbox',
+          'default-studio-sandbox',
+          'youtube_shorts',
+          '9:16',
+          45,
+          'draft'
+        )
+        ON CONFLICT (id) DO NOTHING;
       `);
       isInitialized = true;
     } finally {
